@@ -25,7 +25,13 @@ const HoaDonModel = {
 
     // Lấy hóa đơn theo phòng
     getByPhong: async (MaPhong) => {
-        const [rows] = await db.query('SELECT * FROM hoadon WHERE MaPhong = ? ORDER BY NgayTao DESC', [MaPhong]);
+        const [rows] = await db.query(`
+            SELECT hd.*, p.SoPhong 
+            FROM hoadon hd 
+            LEFT JOIN phong p ON hd.MaPhong = p.MaPhong
+            WHERE hd.MaPhong = ? 
+            ORDER BY hd.NgayTao DESC
+        `, [MaPhong]);
         return rows;
     },
 

@@ -3,8 +3,11 @@ const response = require('../utils/responseFormat');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-// Hàm tạo mã tự động
-const generateId = () => 'ND' + Date.now();
+// Hàm tạo mã tự động theo vai trò
+const generateId = (role) => {
+    const prefix = role === 'admin' ? 'AD' : role === 'kythuat' ? 'KT' : 'CD';
+    return prefix + Date.now();
+};
 
 const NguoiDungController = {
     // Đăng nhập
@@ -55,12 +58,13 @@ const NguoiDungController = {
             
             const hashedPassword = await bcrypt.hash(MatKhau, 10);
             
-            const MaNguoiDung = generateId();
+            const role = VaiTro || 'cudan';
+            const MaNguoiDung = generateId(role);
             await NguoiDungModel.create({
                 MaNguoiDung,
                 TenDangNhap,
                 MatKhau: hashedPassword,
-                VaiTro: VaiTro || 'cudan',
+                VaiTro: role,
                 TrangThai: 'Hoạt động',
                 Email
             });

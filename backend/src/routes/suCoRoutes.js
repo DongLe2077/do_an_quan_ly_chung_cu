@@ -23,12 +23,12 @@ router.get('/:id', authMiddleware, SuCoController.getById);
 router.post('/', authMiddleware, SuCoController.create);
 
 // PUT /api/suco/:id (MaSuCo)
-router.put('/:id', authMiddleware, roleMiddleware(roleMiddleware.ROLES.ADMIN), SuCoController.update);
+router.put('/:id', authMiddleware, SuCoController.update);
 
 // PATCH /api/suco/:id/xuly
 router.patch('/:id/xuly', authMiddleware, roleMiddleware(roleMiddleware.ROLES.ADMIN), SuCoController.xuLy);
 
 // DELETE /api/suco/:id (MaSuCo)
-router.delete('/:id', authMiddleware, roleMiddleware(roleMiddleware.ROLES.ADMIN), SuCoController.delete);
+router.delete('/:id', authMiddleware, SuCoController.delete);
 
 module.exports = router;

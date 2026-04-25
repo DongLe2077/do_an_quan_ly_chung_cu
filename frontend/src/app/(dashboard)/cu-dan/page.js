@@ -123,7 +123,7 @@ export default function CuDanPage() {
               <th>HỌ TÊN</th>
               <th>CĂN HỘ</th>
               <th>SỐ ĐIỆN THOẠI</th>
-              <th>EMAIL</th>
+              <th>CCCD</th>
               <th>TRẠNG THÁI</th>
               <th style={{ textAlign: 'center' }}>HÀNH ĐỘNG</th>
             </tr>
@@ -147,7 +147,7 @@ export default function CuDanPage() {
                   </td>
                   <td style={{ fontWeight: 500 }}>{item.SoPhong || 'N/A'}</td>
                   <td>{item.SoDienThoai || '—'}</td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{item.CCCD ? `${item.CCCD}@mail.com` : '—'}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{item.CCCD || '—'}</td>
                   <td>
                     <span className={`badge ${isTemporary ? 'badge-info' : 'badge-success'}`}>
                       {status}

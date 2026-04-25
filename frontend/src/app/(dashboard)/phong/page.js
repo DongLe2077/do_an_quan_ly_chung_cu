@@ -15,6 +15,8 @@ export default function PhongPage() {
   const [filterTrangThai, setFilterTrangThai] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 12;
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailData, setDetailData] = useState(null);
   const [form] = Form.useForm();
 
   useEffect(() => { fetchData(); fetchToaNha(); }, []);
@@ -66,6 +68,16 @@ export default function PhongPage() {
     setModalOpen(true);
   };
 
+  const openDetail = async (MaPhong) => {
+    try {
+      const res = await phongService.getById(MaPhong);
+      setDetailData(res.data?.data);
+      setDetailModalOpen(true);
+    } catch {
+      message.error('Lỗi tải chi tiết căn hộ');
+    }
+  };
+
   const openCreate = () => {
     setEditingRecord(null);
     form.resetFields();
@@ -96,7 +108,7 @@ export default function PhongPage() {
 
   const getRoomType = (dienTich) => {
     if (!dienTich) return 'Studio';
-    if (dienTich >= 100) return 'Penthouse';
+    if (dienTich >= 100) return 'Căn hộ VIP';
     if (dienTich >= 70) return 'Căn hộ 3PN';
     if (dienTich >= 50) return 'Căn hộ 2PN';
     return 'Studio';
@@ -191,7 +203,7 @@ export default function PhongPage() {
 
             <div className="apartment-card-actions">
               <button className="btn btn-ghost" onClick={() => openEdit(item)}>Sửa</button>
-              <button className="btn btn-dark" onClick={() => {}}>Chi tiết</button>
+              <button className="btn btn-dark" onClick={() => openDetail(item.MaPhong)}>Chi tiết</button>
             </div>
           </div>
         )) : (
@@ -223,7 +235,7 @@ export default function PhongPage() {
 
 
 
-      {/* MODAL */}
+      {/* ADD/EDIT MODAL */}
       <Modal
         title={editingRecord ? 'Sửa căn hộ' : 'Thêm căn hộ mới'}
         open={modalOpen}
@@ -249,6 +261,72 @@ export default function PhongPage() {
             <InputNumber min={0} style={{ width: '100%' }} placeholder="Nhập diện tích" />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* DETAIL MODAL */}
+      <Modal
+        title={`Chi tiết căn hộ ${detailData?.SoPhong}`}
+        open={detailModalOpen}
+        onCancel={() => setDetailModalOpen(false)}
+        footer={[
+          <button key="close" className="btn btn-dark" onClick={() => setDetailModalOpen(false)}>Đóng</button>
+        ]}
+        width={600}
+      >
+        {detailData && (
+          <div className="detail-container">
+            <div className="detail-section">
+              <h4 style={{ marginBottom: 12, color: 'var(--primary-color)' }}>Thông tin chung</h4>
+              <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)' }}>Tòa nhà</label>
+                  <div style={{ fontWeight: 500 }}>{detailData.TenToaNha}</div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)' }}>Số phòng</label>
+                  <div style={{ fontWeight: 500 }}>{detailData.SoPhong}</div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)' }}>Loại căn hộ</label>
+                  <div style={{ fontWeight: 500 }}>{getRoomType(detailData.DienTich)}</div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)' }}>Diện tích</label>
+                  <div style={{ fontWeight: 500 }}>{detailData.DienTich} m²</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="detail-section" style={{ marginTop: 24 }}>
+              <h4 style={{ marginBottom: 12, color: 'var(--primary-color)' }}>Danh sách cư dân ({detailData.DanhSachCuDan?.length || 0})</h4>
+              {detailData.DanhSachCuDan?.length > 0 ? (
+                <div style={{ background: '#f8f9fa', borderRadius: 8, padding: 8 }}>
+                  {detailData.DanhSachCuDan.map((resident, idx) => (
+                    <div key={resident.MaCuDan} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      padding: '10px 12px',
+                      borderBottom: idx === detailData.DanhSachCuDan.length - 1 ? 'none' : '1px solid #eee'
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{resident.HoTen}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>SĐT: {resident.SoDienThoai || 'N/A'}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>CCCD: {resident.CCCD || 'N/A'}</div>
+                        <div style={{ fontSize: 11, fontStyle: 'italic' }}>{resident.QueQuan}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', border: '1px dashed #ddd', borderRadius: 8 }}>
+                  Chưa có cư dân đăng ký ở căn hộ này.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

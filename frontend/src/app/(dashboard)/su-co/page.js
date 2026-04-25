@@ -11,6 +11,8 @@ import useAuthStore from '@/store/authStore';
 const { Title } = Typography;
 const { TextArea } = Input;
 
+const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+
 const trangThaiColors = { 'Chờ duyệt': 'orange', 'Đang xử lý': 'blue', 'Đã xử lý': 'green' };
 
 export default function SuCoPage() {
@@ -63,13 +65,33 @@ export default function SuCoPage() {
 
   const handleSubmit = async (values) => {
     try {
-      // Lấy URL ảnh từ fileList nếu có upload mới
-      let finalImageUrl = values.AnhSuCo;
-      if (fileList.length > 0 && fileList[0].response?.url) {
-        finalImageUrl = fileList[0].response.url;
+      let finalImageUrl = '';
+      
+      // Lấy danh sách URL từ fileList (do đã dùng valuePropName="fileList")
+      const currentFileList = values.AnhSuCo;
+      if (currentFileList && currentFileList.length > 0) {
+        const urls = currentFileList.map(file => {
+          if (file.response?.success !== false && file.response?.url) {
+            return file.response.url;
+          }
+          if (file.url) {
+            let url = file.url;
+            if (url.startsWith(backendUrl)) {
+              url = url.replace(backendUrl, '');
+            }
+            return url;
+          }
+          return null;
+        }).filter(url => url !== null);
+        
+        finalImageUrl = urls.join(',');
       }
 
-      const payload = { ...values, AnhSuCo: finalImageUrl };
+      const payload = { 
+        ...values, 
+        AnhSuCo: finalImageUrl,
+        MaPhong: values.MaPhong || cuDanInfo?.MaPhong 
+      };
 
       if (editingRecord) {
         await suCoService.update(editingRecord.MaSuCo, payload);
@@ -83,7 +105,10 @@ export default function SuCoPage() {
       setFileList([]);
       setEditingRecord(null);
       fetchData();
-    } catch (error) { message.error(error.response?.data?.message || 'Thao tác thất bại'); }
+    } catch (error) { 
+      console.error(error);
+      message.error(error.response?.data?.message || 'Thao tác thất bại'); 
+    }
   };
 
   const handleXuLy = async (values) => {
@@ -108,6 +133,25 @@ export default function SuCoPage() {
   const columns = [
     { title: 'Mã SC', dataIndex: 'MaSuCo', key: 'MaSuCo', width: 140, ellipsis: true },
     { title: 'Tên sự cố', dataIndex: 'TenSuCo', key: 'TenSuCo', ellipsis: true },
+    {
+      title: 'Ảnh', dataIndex: 'AnhSuCo', key: 'AnhSuCo', width: 100,
+      render: (val) => {
+        if (!val) return 'No photo';
+        const urls = val.split(',');
+        return (
+          <Space>
+            {urls.slice(0, 2).map((url, i) => (
+              <img 
+                key={i} 
+                src={url.startsWith('http') ? url : `${backendUrl}${url}`} 
+                style={{ width: 30, height: 30, objectFit: 'cover', borderRadius: 4 }} 
+              />
+            ))}
+            {urls.length > 2 && <span style={{ fontSize: 10 }}>+{urls.length - 2}</span>}
+          </Space>
+        );
+      }
+    },
     { title: 'Phòng', dataIndex: 'SoPhong', key: 'SoPhong', width: 90 },
     { title: 'Người báo', dataIndex: 'TenNguoiBao', key: 'TenNguoiBao', width: 120 },
     {
@@ -130,7 +174,21 @@ export default function SuCoPage() {
                 Xử lý
               </Button>
               <Button type="link" size="small" icon={<EditOutlined />} onClick={() => {
-                setEditingRecord(record); form.setFieldsValue(record); setModalOpen(true);
+                setEditingRecord(record); 
+                const imageUrls = record.AnhSuCo ? record.AnhSuCo.split(',') : [];
+                const formattedRecord = {
+                  ...record,
+                  AnhSuCo: imageUrls.map((url, idx) => ({
+                    uid: `-${idx}`,
+                    name: `image-${idx}.png`,
+                    status: 'done',
+                    url: url,
+                    thumbUrl: url.startsWith('http') ? url : `${backendUrl}${url}`
+                  }))
+                };
+                form.setFieldsValue(formattedRecord); 
+                setFileList(formattedRecord.AnhSuCo);
+                setModalOpen(true);
               }}>Sửa</Button>
               <Popconfirm title="Xác nhận xóa sự cố?" onConfirm={() => handleDelete(record.MaSuCo)} okText="Xóa" cancelText="Hủy">
                 <Button type="link" size="small" danger icon={<DeleteOutlined />}>Xóa</Button>
@@ -211,7 +269,7 @@ export default function SuCoPage() {
             <Col key={item.key || item.MaSuCo} xs={24} sm={24} md={12} lg={12} xl={8} xxl={8}>
               <Card 
                 className="incident-card-premium"
-                bordered={false}
+                variant="borderless"
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div className={`status-badge-modern ${getStatusGlow(item.TrangThai)}`}>
@@ -224,12 +282,16 @@ export default function SuCoPage() {
                 </div>
                 
                 {item.AnhSuCo && (
-                  <div className="incident-image-container">
-                    <img 
-                      src={item.AnhSuCo.startsWith('http') ? item.AnhSuCo : `http://localhost:3000${item.AnhSuCo}`} 
-                      alt="Ảnh sự cố" 
-                      className="incident-image"
-                    />
+                  <div className="incident-images-wrapper">
+                    {item.AnhSuCo.split(',').map((url, idx) => (
+                      <div key={idx} className="incident-image-container">
+                        <img 
+                          src={url.startsWith('http') ? url : `${backendUrl}${url}`} 
+                          alt={`Ảnh sự cố ${idx + 1}`} 
+                          className="incident-image"
+                        />
+                      </div>
+                    ))}
                   </div>
                 )}
                 
@@ -237,19 +299,66 @@ export default function SuCoPage() {
                   <h3 className="incident-title" style={{ marginTop: 12 }}>{item.TenSuCo}</h3>
                   <p className="incident-desc">{item.MoTa}</p>
                   
-                  <div className="incident-meta">
-                    <div className="meta-item">
-                      <HomeOutlined />
-                      <span>Phòng {item.SoPhong}</span>
-                    </div>
-                    {item.NguoiXuLy && (
+                    <div className="incident-meta">
                       <div className="meta-item">
-                        <UserOutlined />
-                        <span>Xử lý bởi: <b>{item.NguoiXuLy}</b></span>
+                        <HomeOutlined />
+                        <span>Phòng {item.SoPhong}</span>
                       </div>
-                    )}
+                      {item.NguoiXuLy && (
+                        <div className="meta-item">
+                          <UserOutlined />
+                          <span>Xử lý bởi: <b>{item.NguoiXuLy}</b></span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+
+                  {item.TrangThai === 'Chờ duyệt' && (
+                    <div style={{ padding: '0 16px 16px', display: 'flex', gap: 8, borderTop: '1px solid #f0f0f0', paddingTop: 12 }}>
+                      <Button 
+                        type="primary" 
+                        ghost 
+                        size="small" 
+                        icon={<EditOutlined />} 
+                        onClick={() => {
+                          setEditingRecord(item); 
+                          const imageUrls = item.AnhSuCo ? item.AnhSuCo.split(',') : [];
+                          const formattedRecord = {
+                            ...item,
+                            AnhSuCo: imageUrls.map((url, idx) => ({
+                              uid: `-${idx}`,
+                              name: `image-${idx}.png`,
+                              status: 'done',
+                              url: url,
+                              thumbUrl: url.startsWith('http') ? url : `${backendUrl}${url}`
+                            }))
+                          };
+                          form.setFieldsValue(formattedRecord); 
+                          setFileList(formattedRecord.AnhSuCo);
+                          setModalOpen(true);
+                        }}
+                        style={{ flex: 1, borderRadius: 8 }}
+                      >
+                        Sửa
+                      </Button>
+                      <Popconfirm 
+                        title="Xác nhận hủy báo cáo sự cố này?" 
+                        onConfirm={() => handleDelete(item.MaSuCo)}
+                        okText="Hủy báo cáo" 
+                        cancelText="Quay lại"
+                        okButtonProps={{ danger: true }}
+                      >
+                        <Button 
+                          danger 
+                          size="small" 
+                          icon={<DeleteOutlined />} 
+                          style={{ flex: 1, borderRadius: 8 }}
+                        >
+                          Hủy
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  )}
               </Card>
             </Col>
           ))}
@@ -273,11 +382,26 @@ export default function SuCoPage() {
           overflow: hidden;
           border: 1px solid #f0f0f0;
         }
+        .incident-images-wrapper {
+          display: flex;
+          overflow-x: auto;
+          gap: 8px;
+          padding: 8px;
+          background: #f8f9fa;
+        }
+        .incident-images-wrapper::-webkit-scrollbar {
+          height: 4px;
+        }
+        .incident-images-wrapper::-webkit-scrollbar-thumb {
+          background: #ddd;
+          border-radius: 4px;
+        }
         .incident-image-container {
-          width: 100%;
-          height: 180px;
+          flex: 0 0 200px;
+          height: 150px;
+          border-radius: 8px;
           overflow: hidden;
-          background: #f5f5f5;
+          background: #eee;
           position: relative;
         }
         .incident-image {
@@ -432,16 +556,24 @@ export default function SuCoPage() {
               </Form.Item>
             )
           )}
-          <Form.Item name="AnhSuCo" label="Hình ảnh sự cố">
+          <Form.Item 
+            name="AnhSuCo" 
+            label="Hình ảnh sự cố"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => {
+              if (Array.isArray(e)) return e;
+              return e?.fileList;
+            }}
+          >
             <Upload
-              action="http://localhost:3000/api/upload"
+              action={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/upload`}
               name="image"
               listType="picture-card"
               fileList={fileList}
               onChange={({ fileList }) => setFileList(fileList)}
               onPreview={async (file) => {
-                let src = file.url;
-                if (!src) {
+                let src = file.url || file.thumbUrl;
+                if (!src && file.originFileObj) {
                   src = await new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(file.originFileObj);
@@ -453,9 +585,9 @@ export default function SuCoPage() {
                 const imgWindow = window.open(src);
                 imgWindow?.document.write(image.outerHTML);
               }}
-              maxCount={1}
+              maxCount={5}
             >
-              {fileList.length < 1 && (
+              {fileList.length < 5 && (
                 <div>
                   <PlusOutlined />
                   <div style={{ marginTop: 8 }}>Tải ảnh</div>

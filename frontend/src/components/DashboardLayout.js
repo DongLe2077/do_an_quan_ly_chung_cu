@@ -79,16 +79,12 @@ export default function DashboardLayout({ children }) {
             }} />
           </div>
           <div className="sidebar-logo-text">
-            <h2>{isAdmin ? 'Elevate Admin' : 'Elevate Resident'}</h2>
-            <span>{isAdmin ? 'MANAGEMENT' : 'PORTAL'}</span>
+            <h2>{isAdmin ? 'Ban Quản Lý' : 'Cổng Cư Dân'}</h2>
+            <span>{isAdmin ? 'CHUNG CƯ' : 'DỊCH VỤ THÔNG MINH'}</span>
           </div>
         </div>
 
-        {isAdmin && (
-          <button className="sidebar-new-btn" onClick={() => router.push('/dashboard')}>
-            <span>+ Thêm mới</span>
-          </button>
-        )}
+
         
 
         <nav className="sidebar-nav" style={{ marginTop: !isAdmin ? '0' : 'auto' }}>

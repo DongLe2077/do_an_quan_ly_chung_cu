@@ -149,8 +149,10 @@ export default function HoaDonPage() {
   const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const totalPaid = data.filter(h => h.TrangThai === 'Đã thanh toán').length;
+  const totalPending = data.filter(h => h.TrangThai === 'Chờ xác nhận').length;
   const totalUnpaid = data.filter(h => h.TrangThai === 'Chưa thanh toán').length;
-  const paidPercent = data.length > 0 ? Math.round((totalPaid / data.length) * 100) : 0;
+  const totalInvoices = data.length;
+  const paidPercent = totalInvoices > 0 ? Math.round((totalPaid / totalInvoices) * 100) : 0;
 
   const getInitials = (name) => {
     if (!name) return '??';
@@ -227,7 +229,7 @@ export default function HoaDonPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>TÊN CƯ DÂN</th>
+                <th>{isAdmin ? 'TÊN CƯ DÂN' : 'THÁNG THU'}</th>
                 <th>SỐ PHÒNG</th>
                 <th>TỔNG TIỀN</th>
                 <th>NGÀY XUẤT</th>
@@ -246,7 +248,8 @@ export default function HoaDonPage() {
                       <div className="table-row-item">
                         <div className={`avatar-initials ${colorClass}`}>{initials}</div>
                         <div className="table-row-info">
-                          <h4>{item.TenCuDan || `Phòng ${item.SoPhong}`}</h4>
+                          <h4>{isAdmin ? (item.TenCuDan || `Phòng ${item.SoPhong}`) : `Tháng ${item.ThangThu}`}</h4>
+                          {!isAdmin && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Mã: #{item.MaHoaDon?.slice(0, 8)}</span>}
                         </div>
                       </div>
                     </td>
@@ -424,9 +427,11 @@ export default function HoaDonPage() {
               </div>
             </div>
             <div className="progress-stat-card">
-              <div className="stat-label">HÓA ĐƠN CHƯA THU</div>
-              <div className="stat-value" style={{ color: 'var(--danger)' }}>{totalUnpaid.toString().padStart(2, '0')}</div>
-              <div className="stat-sub">{isAdmin ? 'CẦN ĐỐC THÚC' : 'CẦN THANH TOÁN'}</div>
+              <div className="stat-label">{isAdmin ? 'HÓA ĐƠN CHƯA THU' : 'HÓA ĐƠN CẦN ĐÓNG'}</div>
+              <div className="stat-value" style={{ color: 'var(--danger)' }}>
+                {(isAdmin ? totalUnpaid : (totalUnpaid + totalPending)).toString().padStart(2, '0')}
+              </div>
+              <div className="stat-sub">{isAdmin ? 'CẦN ĐỐC THÚC' : (totalPending > 0 ? 'ĐANG CHỜ XÁC NHẬN' : 'CẦN THANH TOÁN')}</div>
             </div>
           </div>
         </div>

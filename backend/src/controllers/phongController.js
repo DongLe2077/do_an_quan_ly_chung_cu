@@ -18,6 +18,12 @@ const PhongController = {
             const { id } = req.params;
             const data = await PhongModel.getById(id);
             if (!data) return response.error(res, 'Không tìm thấy phòng', 404);
+            
+            // Lấy thêm danh sách cư dân trong phòng
+            const CuDanModel = require('../models/cuDanModel');
+            const cuDan = await CuDanModel.getByPhong(id);
+            data.DanhSachCuDan = cuDan;
+
             return response.success(res, data, 'Lấy thông tin phòng thành công');
         } catch (error) {
             return response.error(res, error.message);

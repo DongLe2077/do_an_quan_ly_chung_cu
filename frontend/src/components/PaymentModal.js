@@ -5,11 +5,11 @@ import { Modal, App as AntdApp } from 'antd';
 
 // Thông tin tài khoản BQL chung cư
 const BANK_INFO = {
-  bankName: 'Vietcombank',
-  bankCode: 'VCB',
-  accountNumber: '1234567890',
-  accountHolder: 'BQL CHUNG CƯ ELEVATE',
-  branch: 'Chi nhánh TP.HCM',
+  bankName: 'MBBank',
+  bankCode: 'MB',
+  accountNumber: '0383689891',
+  accountHolder: 'LE BA DONG',
+  branch: 'Hội sở',
 };
 
 const PAYMENT_METHODS = [
@@ -51,6 +51,7 @@ export default function PaymentModal({ open, onClose, invoice, onConfirm, loadin
     setProcessing(true);
     try {
       await onConfirm(selectedMethod);
+      message.success('Gửi xác nhận thanh toán thành công! Vui lòng chờ Ban quản lý duyệt.');
       setStep(3);
     } catch (error) {
       message.error('Thanh toán thất bại. Vui lòng thử lại.');

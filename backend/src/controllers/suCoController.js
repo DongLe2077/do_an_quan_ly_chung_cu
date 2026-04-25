@@ -73,10 +73,25 @@ const SuCoController = {
     update: async (req, res) => {
         try {
             const { id } = req.params;
+            const { user } = req;
             let { TenSuCo, MoTa, AnhSuCo, TrangThai, NguoiXuLy, NgayXuLy } = req.body;
 
             const existing = await SuCoModel.getById(id);
             if (!existing) return response.error(res, 'Không tìm thấy sự cố', 404);
+
+            // Kiểm tra quyền hạn nếu không phải admin
+            if (user.VaiTro !== 'admin') {
+                if (existing.MaNguoiBao !== user.MaNguoiDung) {
+                    return response.error(res, 'Bạn không có quyền sửa sự cố này', 403);
+                }
+                if (existing.TrangThai !== 'Chờ duyệt') {
+                    return response.error(res, `Không thể sửa sự cố khi trạng thái là: ${existing.TrangThai}`, 400);
+                }
+                // Cư dân không được phép tự ý sửa trạng thái hoặc thông tin xử lý
+                TrangThai = existing.TrangThai;
+                NguoiXuLy = existing.NguoiXuLy;
+                NgayXuLy = existing.NgayXuLy;
+            }
 
             TenSuCo = TenSuCo !== undefined ? TenSuCo : existing.TenSuCo;
             MoTa = MoTa !== undefined ? MoTa : existing.MoTa;
@@ -110,8 +125,20 @@ const SuCoController = {
     delete: async (req, res) => {
         try {
             const { id } = req.params;
+            const { user } = req;
+
             const existing = await SuCoModel.getById(id);
             if (!existing) return response.error(res, 'Không tìm thấy sự cố', 404);
+
+            // Kiểm tra quyền hạn nếu không phải admin
+            if (user.VaiTro !== 'admin') {
+                if (existing.MaNguoiBao !== user.MaNguoiDung) {
+                    return response.error(res, 'Bạn không có quyền xóa sự cố này', 403);
+                }
+                if (existing.TrangThai !== 'Chờ duyệt') {
+                    return response.error(res, 'Không thể hủy sự cố khi đã được duyệt hoặc đang xử lý', 400);
+                }
+            }
 
             await SuCoModel.delete(id);
             return response.success(res, null, 'Xóa sự cố thành công');
