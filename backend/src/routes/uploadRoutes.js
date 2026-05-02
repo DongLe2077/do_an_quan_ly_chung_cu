@@ -4,6 +4,14 @@ const multer = require('multer');
 const path = require('path');
 const sharp = require('sharp');
 const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
+
+// Cấu hình Cloudinary (nếu có)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Sử dụng memoryStorage để xử lý ảnh bằng sharp trước khi lưu
 const storage = multer.memoryStorage();
@@ -25,6 +33,30 @@ const upload = multer({
 
 // Hàm nén ảnh
 const processImage = async (buffer) => {
+    // 1. Nén ảnh bằng sharp
+    const compressedBuffer = await sharp(buffer)
+        .resize(1200, 1200, {
+            fit: 'inside',
+            withoutEnlargement: true
+        })
+        .webp({ quality: 80 })
+        .toBuffer();
+
+    // 2. Nếu có cấu hình Cloudinary, đẩy thẳng lên Cloud
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+        return new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                { folder: 'quanlychungcu', format: 'webp' },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result.secure_url); // Trả về link ảnh thật trên mạng
+                }
+            );
+            uploadStream.end(compressedBuffer);
+        });
+    }
+
+    // 3. (Fallback) Lưu vào máy tính nếu đang chạy localhost
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const filename = uniqueSuffix + '.webp';
     const uploadsDir = path.join(__dirname, '../public/uploads');
@@ -34,14 +66,7 @@ const processImage = async (buffer) => {
     }
 
     const outputPath = path.join(uploadsDir, filename);
-
-    await sharp(buffer)
-        .resize(1200, 1200, {
-            fit: 'inside',
-            withoutEnlargement: true
-        })
-        .webp({ quality: 80 })
-        .toFile(outputPath);
+    fs.writeFileSync(outputPath, compressedBuffer);
 
     return `/uploads/${filename}`;
 };
