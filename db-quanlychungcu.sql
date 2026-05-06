@@ -29,8 +29,8 @@ CREATE TABLE `apartments` (
   `status` varchar(50) NOT NULL DEFAULT 'Trống',
   `area` float DEFAULT NULL,
   PRIMARY KEY (`apartment_id`),
-  KEY `fk_phong_toanha` (`building_id`),
-  CONSTRAINT `fk_phong_toanha` FOREIGN KEY (`building_id`) REFERENCES `buildings` (`building_id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `fk_apartments_buildings` (`building_id`),
+  CONSTRAINT `fk_apartments_buildings` FOREIGN KEY (`building_id`) REFERENCES `buildings` (`building_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -88,10 +88,10 @@ CREATE TABLE `incidents` (
   `resolved_date` date DEFAULT NULL,
   `status` varchar(50) NOT NULL DEFAULT 'Chờ duyệt',
   PRIMARY KEY (`incident_id`),
-  KEY `fk_suco_nguoibao` (`reporter_id`),
-  KEY `fk_suco_phong` (`apartment_id`),
-  CONSTRAINT `fk_suco_nguoibao` FOREIGN KEY (`reporter_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_suco_phong` FOREIGN KEY (`apartment_id`) REFERENCES `apartments` (`apartment_id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `fk_incidents_users` (`reporter_id`),
+  KEY `fk_incidents_apartments` (`apartment_id`),
+  CONSTRAINT `fk_incidents_users` FOREIGN KEY (`reporter_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_incidents_apartments` FOREIGN KEY (`apartment_id`) REFERENCES `apartments` (`apartment_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -121,8 +121,8 @@ CREATE TABLE `invoices` (
   `created_at` date DEFAULT NULL,
   `due_date` date DEFAULT NULL,
   PRIMARY KEY (`invoice_id`),
-  KEY `fk_hoadon_phong` (`apartment_id`),
-  CONSTRAINT `fk_hoadon_phong` FOREIGN KEY (`apartment_id`) REFERENCES `apartments` (`apartment_id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `fk_invoices_apartments` (`apartment_id`),
+  CONSTRAINT `fk_invoices_apartments` FOREIGN KEY (`apartment_id`) REFERENCES `apartments` (`apartment_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -152,10 +152,10 @@ CREATE TABLE `residents` (
   `apartment_id` varchar(50) DEFAULT NULL,
   `user_id` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`resident_id`),
-  KEY `fk_cudan_nguoidung` (`user_id`),
-  KEY `fk_cudan_phong` (`apartment_id`),
-  CONSTRAINT `fk_cudan_nguoidung` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_cudan_phong` FOREIGN KEY (`apartment_id`) REFERENCES `apartments` (`apartment_id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `fk_residents_users` (`user_id`),
+  KEY `fk_residents_apartments` (`apartment_id`),
+  CONSTRAINT `fk_residents_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_residents_apartments` FOREIGN KEY (`apartment_id`) REFERENCES `apartments` (`apartment_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -185,10 +185,10 @@ CREATE TABLE `service_readings` (
   `quantity` double DEFAULT NULL,
   `reading_date` date DEFAULT NULL,
   PRIMARY KEY (`reading_id`),
-  KEY `fk_chiso_dichvu` (`service_id`),
-  KEY `fk_chiso_hoadon` (`invoice_id`),
-  CONSTRAINT `fk_chiso_dichvu` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_chiso_hoadon` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`invoice_id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `fk_readings_services` (`service_id`),
+  KEY `fk_readings_invoices` (`invoice_id`),
+  CONSTRAINT `fk_readings_services` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_readings_invoices` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`invoice_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
