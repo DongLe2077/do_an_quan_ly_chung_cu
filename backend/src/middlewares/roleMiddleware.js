@@ -4,7 +4,7 @@ const roleMiddleware = (...allowedRoles) => {
     return (req, res, next) => {
         try {
             // req.user được gán từ authMiddleware sau khi verify token
-            const userRole = req.user?.VaiTro;
+            const userRole = req.user?.role;
 
             if (!userRole) {
                 return res.status(403).json({

@@ -3,18 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
-import toaNhaService from '@/services/toaNhaService';
-import phongService from '@/services/phongService';
-import cuDanService from '@/services/cuDanService';
-import hoaDonService from '@/services/hoaDonService';
-import suCoService from '@/services/suCoService';
-import chiSoDichVuService from '@/services/chiSoDichVuService';
+import buildingService from '@/services/buildingService';
+import apartmentService from '@/services/apartmentService';
+import residentService from '@/services/residentService';
+import invoiceService from '@/services/invoiceService';
+import incidentService from '@/services/incidentService';
+import serviceReadingService from '@/services/serviceReadingService';
 import { Modal, Form, Input, message, Table, Descriptions, Badge } from 'antd';
 import PaymentModal from '@/components/PaymentModal';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const isAdmin = user?.VaiTro === 'admin';
+  const isAdmin = user?.role === 'admin';
 
   if (!user) return null;
 
@@ -46,19 +46,19 @@ function ResidentDashboard({ user }) {
   const fetchResidentData = async () => {
     try {
       setLoading(true);
-      // 1. Get Cu Dan info by MaNguoiDung
-      const cdRes = await cuDanService.getByNguoiDung(user.MaNguoiDung).catch(() => ({ data: { data: null } }));
+      // 1. Get resident info by user_id
+      const cdRes = await residentService.getByUser(user.user_id).catch(() => ({ data: { data: null } }));
       const cdInfo = cdRes.data?.data;
       setCuDanInfo(cdInfo);
 
-      if (cdInfo?.MaPhong) {
+      if (cdInfo?.apartment_id) {
         // Fetch invoices for this room
-        const hdRes = await hoaDonService.getByPhong(cdInfo.MaPhong).catch(() => ({ data: { data: [] } }));
+        const hdRes = await invoiceService.getByApartment(cdInfo.apartment_id).catch(() => ({ data: { data: [] } }));
         setHoaDonList(hdRes.data?.data || []);
       }
 
       // Fetch incidents reported by this user
-      const scRes = await suCoService.getByNguoiBao(user.MaNguoiDung).catch(() => ({ data: { data: [] } }));
+      const scRes = await incidentService.getByNguoiBao(user.user_id).catch(() => ({ data: { data: [] } }));
       setSuCoList(scRes.data?.data || []);
 
     } catch (error) {
@@ -74,7 +74,7 @@ function ResidentDashboard({ user }) {
   };
 
   const handlePaymentConfirm = async (phuongThuc) => {
-    await hoaDonService.thanhToan(selectedInvoiceForPayment.MaHoaDon, { PhuongThuc: phuongThuc });
+    await invoiceService.thanhToan(selectedInvoiceForPayment.invoice_id, { PhuongThuc: phuongThuc });
     fetchResidentData();
   };
 
@@ -83,7 +83,7 @@ function ResidentDashboard({ user }) {
     setDetailModalVisible(true);
     setLoadingDetails(true);
     try {
-      const res = await chiSoDichVuService.getByHoaDon(invoice.MaHoaDon);
+      const res = await serviceReadingService.getByInvoice(invoice.invoice_id);
       setInvoiceDetails(res.data?.data || []);
     } catch (error) {
       message.error('Không thể tải chi tiết hóa đơn');
@@ -94,10 +94,10 @@ function ResidentDashboard({ user }) {
 
   const handleSubmitSuCo = async (values) => {
     try {
-      await suCoService.create({
+      await incidentService.create({
         ...values,
-        MaNguoiBao: user.MaNguoiDung,
-        MaPhong: cuDanInfo?.MaPhong || null,
+        reporter_id: user.user_id,
+        apartment_id: cuDanInfo?.apartment_id || null,
       });
       message.success('Đã gửi yêu cầu/sự cố thành công!');
       setSuCoModalVisible(false);
@@ -119,8 +119,8 @@ function ResidentDashboard({ user }) {
     return <span className="badge badge-neutral">{status}</span>;
   };
 
-  const unpaidInvoices = hoaDonList.filter(h => h.TrangThai === 'Chưa thanh toán');
-  const totalUnpaid = unpaidInvoices.reduce((sum, h) => sum + Number(h.TongTien || 0), 0);
+  const unpaidInvoices = hoaDonList.filter(h => h.status === 'Chưa thanh toán');
+  const totalUnpaid = unpaidInvoices.reduce((sum, h) => sum + Number(h.total_amount || 0), 0);
 
   if (loading) {
     return (
@@ -130,7 +130,7 @@ function ResidentDashboard({ user }) {
     );
   }
 
-  const initials = (cuDanInfo?.HoTen || user?.TenDangNhap || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const initials = (cuDanInfo?.full_name || user?.username || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <div>
@@ -144,8 +144,8 @@ function ResidentDashboard({ user }) {
             {initials}
           </div>
           <div>
-            <h2>Xin chào, {cuDanInfo?.HoTen || user?.TenDangNhap}!</h2>
-            <p style={{ fontSize: 16 }}>Căn hộ: <strong style={{ color: 'white' }}>{cuDanInfo?.SoPhong || 'Chưa liên kết'}</strong></p>
+            <h2>Xin chào, {cuDanInfo?.full_name || user?.username}!</h2>
+            <p style={{ fontSize: 16 }}>Căn hộ: <strong style={{ color: 'white' }}>{cuDanInfo?.apartment_number || 'Chưa liên kết'}</strong></p>
           </div>
         </div>
       </div>
@@ -168,26 +168,26 @@ function ResidentDashboard({ user }) {
             {hoaDonList.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {hoaDonList.map((hd) => (
-                  <div key={hd.MaHoaDon} style={{
+                  <div key={hd.invoice_id} style={{
                     padding: 16, borderRadius: 12, border: '1px solid var(--border-color)',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    background: hd.TrangThai === 'Đã thanh toán' ? '#f8f9fb' : '#fff'
+                    background: hd.status === 'Đã thanh toán' ? '#f8f9fb' : '#fff'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                       <div style={{
                         width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-                        background: hd.TrangThai === 'Đã thanh toán' ? 'var(--success-bg)' : 'var(--danger-bg)',
-                        color: hd.TrangThai === 'Đã thanh toán' ? 'var(--success)' : 'var(--danger)'
+                        background: hd.status === 'Đã thanh toán' ? 'var(--success-bg)' : 'var(--danger-bg)',
+                        color: hd.status === 'Đã thanh toán' ? 'var(--success)' : 'var(--danger)'
                       }}>
                         📄
                       </div>
                       <div>
-                        <h4 style={{ margin: '0 0 4px', fontSize: 15 }}>Hóa đơn phí dịch vụ - {hd.ThangThu}</h4>
+                        <h4 style={{ margin: '0 0 4px', fontSize: 15 }}>Hóa đơn phí dịch vụ - {hd.billing_month}</h4>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Hạn: {hd.HanDongTien ? new Date(hd.HanDongTien).toLocaleDateString() : 'N/A'}</span>
-                          {hd.TrangThai === 'Đã thanh toán' 
+                          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Hạn: {hd.due_date ? new Date(hd.due_date).toLocaleDateString() : 'N/A'}</span>
+                          {hd.status === 'Đã thanh toán' 
                             ? <span className="badge badge-success">Đã thanh toán</span>
-                            : hd.TrangThai === 'Chờ xác nhận'
+                            : hd.status === 'Chờ xác nhận'
                             ? <span className="badge badge-warning">Chờ xác nhận</span>
                             : <span className="badge badge-danger">Chưa thanh toán</span>
                           }
@@ -195,12 +195,12 @@ function ResidentDashboard({ user }) {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                      <div style={{ fontSize: 16, fontWeight: 700 }}>{formatCurrency(hd.TongTien)}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700 }}>{formatCurrency(hd.total_amount)}</div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="btn-ghost" onClick={() => handleViewDetails(hd)} style={{ padding: '4px 8px', fontSize: 12, border: '1px solid var(--border-color)', borderRadius: 6 }}>
                           Chi tiết
                         </button>
-                        {hd.TrangThai === 'Chưa thanh toán' && (
+                        {hd.status === 'Chưa thanh toán' && (
                           <button className="btn btn-primary" onClick={() => openPaymentModal(hd)} style={{ padding: '6px 16px', fontSize: 12 }}>
                             Thanh toán
                           </button>
@@ -236,16 +236,16 @@ function ResidentDashboard({ user }) {
             {suCoList.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {suCoList.map(sc => (
-                  <div key={sc.MaSuCo} style={{ padding: 12, borderRadius: 10, border: '1px solid var(--border-color)' }}>
+                  <div key={sc.incident_id} style={{ padding: 12, borderRadius: 10, border: '1px solid var(--border-color)' }}>
                     <div className="flex-between">
-                      <h4 style={{ margin: '0 0 4px', fontSize: 14 }}>{sc.TenSuCo}</h4>
-                      {getSuCoStatusBadge(sc.TrangThai)}
+                      <h4 style={{ margin: '0 0 4px', fontSize: 14 }}>{sc.title}</h4>
+                      {getSuCoStatusBadge(sc.status)}
                     </div>
                     <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '4px 0 8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {sc.MoTa}
+                      {sc.description}
                     </p>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      Gửi lúc: {new Date(sc.NgayBaoCao).toLocaleDateString()}
+                      Gửi lúc: {new Date(sc.report_date).toLocaleDateString()}
                     </div>
                   </div>
                 ))}
@@ -263,7 +263,7 @@ function ResidentDashboard({ user }) {
 
       {/* Modal chi tiết hóa đơn */}
       <Modal
-        title={`Chi tiết hóa đơn - ${selectedInvoice?.ThangThu}`}
+        title={`Chi tiết hóa đơn - ${selectedInvoice?.billing_month}`}
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
         footer={null}
@@ -273,12 +273,12 @@ function ResidentDashboard({ user }) {
           <div>
             <div style={{ marginBottom: 20, padding: 16, background: '#f8f9fb', borderRadius: 8 }}>
               <Descriptions column={2} size="small">
-                <Descriptions.Item label="Mã hóa đơn">{selectedInvoice.MaHoaDon}</Descriptions.Item>
+                <Descriptions.Item label="Mã hóa đơn">{selectedInvoice.invoice_id}</Descriptions.Item>
                 <Descriptions.Item label="Trạng thái">
-                  <Badge status={selectedInvoice.TrangThai === 'Đã thanh toán' ? 'success' : 'error'} text={selectedInvoice.TrangThai} />
+                  <Badge status={selectedInvoice.status === 'Đã thanh toán' ? 'success' : 'error'} text={selectedInvoice.status} />
                 </Descriptions.Item>
-                <Descriptions.Item label="Hạn thanh toán">{selectedInvoice.HanDongTien ? new Date(selectedInvoice.HanDongTien).toLocaleDateString() : 'N/A'}</Descriptions.Item>
-                <Descriptions.Item label="Tổng cộng"><span style={{ fontWeight: 'bold', color: 'var(--danger)', fontSize: 16 }}>{formatCurrency(selectedInvoice.TongTien)}</span></Descriptions.Item>
+                <Descriptions.Item label="Hạn thanh toán">{selectedInvoice.due_date ? new Date(selectedInvoice.due_date).toLocaleDateString() : 'N/A'}</Descriptions.Item>
+                <Descriptions.Item label="Tổng cộng"><span style={{ fontWeight: 'bold', color: 'var(--danger)', fontSize: 16 }}>{formatCurrency(selectedInvoice.total_amount)}</span></Descriptions.Item>
               </Descriptions>
             </div>
             
@@ -288,30 +288,30 @@ function ResidentDashboard({ user }) {
               loading={loadingDetails}
               pagination={false}
               size="small"
-              rowKey="MaGhi"
+              rowKey="reading_id"
               columns={[
-                { title: 'Dịch vụ', dataIndex: 'TenDichVu', key: 'TenDichVu' },
+                { title: 'Dịch vụ', dataIndex: 'service_name', key: 'service_name' },
                 { 
                   title: 'Chỉ số', 
                   key: 'chiSo',
-                  render: (_, record) => record.ChiSoHienTai !== null ? `${record.ChiSoHienTai} - ${record.ChiSoLanGhiTruoc}` : '-'
+                  render: (_, record) => record.current_reading !== null ? `${record.current_reading} - ${record.previous_reading}` : '-'
                 },
                 { 
                   title: 'Số lượng / Sử dụng', 
                   key: 'suDung',
                   render: (_, record) => {
-                    if (record.ChiSoHienTai !== null) return record.ChiSoHienTai - record.ChiSoLanGhiTruoc;
-                    return record.SoLuong || 1;
+                    if (record.current_reading !== null) return record.current_reading - record.previous_reading;
+                    return record.quantity || 1;
                   }
                 },
-                { title: 'Đơn giá', dataIndex: 'DonGia', key: 'DonGia', render: (val) => formatCurrency(val) },
+                { title: 'Đơn giá', dataIndex: 'unit_price', key: 'unit_price', render: (val) => formatCurrency(val) },
                 { 
                   title: 'Thành tiền', 
                   key: 'thanhTien',
                   render: (_, record) => {
                     let total = 0;
-                    if (record.ChiSoHienTai !== null) total = (record.ChiSoHienTai - record.ChiSoLanGhiTruoc) * record.DonGia;
-                    else total = (record.SoLuong || 1) * record.DonGia;
+                    if (record.current_reading !== null) total = (record.current_reading - record.previous_reading) * record.unit_price;
+                    else total = (record.quantity || 1) * record.unit_price;
                     return <span style={{ fontWeight: 600 }}>{formatCurrency(total)}</span>;
                   }
                 }
@@ -331,10 +331,10 @@ function ResidentDashboard({ user }) {
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical" onFinish={handleSubmitSuCo}>
-          <Form.Item name="TenSuCo" label="Tên sự cố / Tiêu đề" rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}>
+          <Form.Item name="title" label="Tên sự cố / Tiêu đề" rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}>
             <Input placeholder="Ví dụ: Rò rỉ nước nhà tắm" />
           </Form.Item>
-          <Form.Item name="MoTa" label="Mô tả chi tiết" rules={[{ required: true, message: 'Vui lòng nhập mô tả chi tiết' }]}>
+          <Form.Item name="description" label="Mô tả chi tiết" rules={[{ required: true, message: 'Vui lòng nhập mô tả chi tiết' }]}>
             <Input.TextArea rows={4} placeholder="Mô tả chi tiết hiện trạng..." />
           </Form.Item>
         </Form>
@@ -372,11 +372,11 @@ function AdminDashboard() {
   const fetchData = async () => {
     try {
       const [toaNhaRes, phongRes, cuDanRes, hoaDonRes, suCoRes] = await Promise.all([
-        toaNhaService.getAll().catch(() => ({ data: { data: [] } })),
-        phongService.getAll().catch(() => ({ data: { data: [] } })),
-        cuDanService.getAll().catch(() => ({ data: { data: [] } })),
-        hoaDonService.getAll().catch(() => ({ data: { data: [] } })),
-        suCoService.getAll().catch(() => ({ data: { data: [] } })),
+        buildingService.getAll().catch(() => ({ data: { data: [] } })),
+        apartmentService.getAll().catch(() => ({ data: { data: [] } })),
+        residentService.getAll().catch(() => ({ data: { data: [] } })),
+        invoiceService.getAll().catch(() => ({ data: { data: [] } })),
+        incidentService.getAll().catch(() => ({ data: { data: [] } })),
       ]);
 
       const toaNhaList = toaNhaRes.data?.data || [];
@@ -385,8 +385,8 @@ function AdminDashboard() {
       const hoaDonList = hoaDonRes.data?.data || [];
       const suCoList = suCoRes.data?.data || [];
 
-      const suCoPending = suCoList.filter(s => s.TrangThai === 'Chờ duyệt' || s.TrangThai === 'Đang xử lý');
-      const totalDoanhThu = hoaDonList.reduce((sum, h) => sum + (Number(h.TongTien) || 0), 0);
+      const suCoPending = suCoList.filter(s => s.status === 'Chờ duyệt' || s.status === 'Đang xử lý');
+      const totalDoanhThu = hoaDonList.reduce((sum, h) => sum + (Number(h.total_amount) || 0), 0);
 
       setStats({
         toaNha: toaNhaList.length,
@@ -400,8 +400,8 @@ function AdminDashboard() {
       setRecentCuDan(cuDanList.slice(0, 3));
 
       // Thống kê trạng thái hóa đơn
-      const daThanhToan = hoaDonList.filter(h => h.TrangThai === 'Đã thanh toán').length;
-      const chuaThanhToan = hoaDonList.filter(h => h.TrangThai === 'Chưa thanh toán').length;
+      const daThanhToan = hoaDonList.filter(h => h.status === 'Đã thanh toán').length;
+      const chuaThanhToan = hoaDonList.filter(h => h.status === 'Chưa thanh toán').length;
       
       setInvoiceStats([
         { name: 'Đã nộp', value: daThanhToan, color: '#34c759' }, // var(--success)
@@ -508,27 +508,27 @@ function AdminDashboard() {
 
       {/* STATS ROW */}
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
-        <div className="stat-card" onClick={() => router.push('/toa-nha')}>
+        <div className="stat-card" onClick={() => router.push('/buildings')}>
           <div className="stat-card-icon">🏢</div>
           <div className="stat-card-label">TÒA NHÀ</div>
           <div className="stat-card-value">{stats.toaNha.toString().padStart(2, '0')}</div>
         </div>
-        <div className="stat-card" onClick={() => router.push('/phong')}>
+        <div className="stat-card" onClick={() => router.push('/apartments')}>
           <div className="stat-card-icon">🏠</div>
           <div className="stat-card-label">CĂN HỘ</div>
           <div className="stat-card-value">{stats.phong.toLocaleString()}</div>
         </div>
-        <div className="stat-card" onClick={() => router.push('/cu-dan')}>
+        <div className="stat-card" onClick={() => router.push('/residents')}>
           <div className="stat-card-icon">👥</div>
           <div className="stat-card-label">CƯ DÂN</div>
           <div className="stat-card-value">{stats.cuDan.toLocaleString()}</div>
         </div>
-        <div className="stat-card" onClick={() => router.push('/hoa-don')}>
+        <div className="stat-card" onClick={() => router.push('/invoices')}>
           <div className="stat-card-icon">💰</div>
           <div className="stat-card-label">TỔNG THU PHÍ</div>
           <div className="stat-card-value">{formatCurrency(stats.doanhThu)}</div>
         </div>
-        <div className="stat-card highlight" onClick={() => router.push('/su-co')}>
+        <div className="stat-card highlight" onClick={() => router.push('/incidents')}>
           <div className="stat-card-icon">⚠️</div>
           <div className="stat-card-label" style={{ color: 'var(--danger)' }}>SỰ CỐ CHỜ</div>
           <div className="stat-card-value" style={{ color: 'var(--danger)' }}>
@@ -635,10 +635,10 @@ function AdminDashboard() {
             {recentSuCo.length > 0 ? recentSuCo.map((sc, i) => (
               <div className="incident-item" key={i}>
                 <div className="incident-info">
-                  <h4>{sc.TenSuCo || `Sự cố #${i + 1}`}</h4>
-                  <span>{sc.SoPhong ? `Phòng ${sc.SoPhong}` : 'Chưa xác định'} • {getTimeAgo(sc.NgayBaoCao)}</span>
+                  <h4>{sc.title || `Sự cố #${i + 1}`}</h4>
+                  <span>{sc.apartment_number ? `Phòng ${sc.apartment_number}` : 'Chưa xác định'} • {getTimeAgo(sc.report_date)}</span>
                 </div>
-                {getSuCoStatusBadge(sc.TrangThai)}
+                {getSuCoStatusBadge(sc.status)}
               </div>
             )) : (
               <>
@@ -675,14 +675,14 @@ function AdminDashboard() {
             {recentCuDan.length > 0 ? recentCuDan.map((cd, i) => {
               const colors = ['avatar-blue', 'avatar-purple', 'avatar-teal'];
               const statusTexts = ['Đã xác minh', 'Chờ duyệt', 'Đã xác minh'];
-              const initials = (cd.HoTen || 'CD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+              const initials = (cd.full_name || 'CD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
               return (
                 <div className="resident-item" key={i}>
                   <div className="resident-item-left">
                     <div className={`avatar-initials ${colors[i % colors.length]}`}>{initials}</div>
                     <div className="resident-item-info">
-                      <h4>{cd.HoTen || 'Cư dân'}</h4>
-                      <span>Căn hộ {cd.SoPhong || 'N/A'}</span>
+                      <h4>{cd.full_name || 'Cư dân'}</h4>
+                      <span>Căn hộ {cd.apartment_number || 'N/A'}</span>
                     </div>
                   </div>
                   <span style={{ fontSize: 12, color: i === 1 ? 'var(--warning)' : 'var(--text-muted)' }}>

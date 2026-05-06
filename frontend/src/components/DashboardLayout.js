@@ -6,20 +6,20 @@ import useAuthStore from '@/store/authStore';
 
 const adminMenuItems = [
   { key: '/dashboard', icon: '📊', label: 'Tổng quan' },
-  { key: '/toa-nha', icon: '🏢', label: 'Tòa nhà' },
-  { key: '/phong', icon: '🏠', label: 'Căn hộ' },
-  { key: '/cu-dan', icon: '👥', label: 'Cư dân' },
-  { key: '/dich-vu', icon: '🔧', label: 'Dịch vụ' },
-  { key: '/chi-so-dich-vu', icon: '📈', label: 'Chỉ số' },
-  { key: '/hoa-don', icon: '📄', label: 'Hóa đơn' },
-  { key: '/su-co', icon: '⚠️', label: 'Sự cố' },
-  { key: '/nguoi-dung', icon: '👥', label: 'Người dùng' },
+  { key: '/buildings', icon: '🏢', label: 'Tòa nhà' },
+  { key: '/apartments', icon: '🏠', label: 'Căn hộ' },
+  { key: '/residents', icon: '👥', label: 'Cư dân' },
+  { key: '/services', icon: '🔧', label: 'Dịch vụ' },
+  { key: '/service-readings', icon: '📈', label: 'Chỉ số' },
+  { key: '/invoices', icon: '📄', label: 'Hóa đơn' },
+  { key: '/incidents', icon: '⚠️', label: 'Sự cố' },
+  { key: '/users', icon: '👥', label: 'Người dùng' },
 ];
 
 const residentMenuItems = [
   { key: '/dashboard', icon: '🏠', label: 'Trang chủ Cư dân' },
-  { key: '/hoa-don', icon: '💳', label: 'Hóa đơn' },
-  { key: '/su-co', icon: '⚒️', label: 'Sự cố' },
+  { key: '/invoices', icon: '💳', label: 'Hóa đơn' },
+  { key: '/incidents', icon: '⚒️', label: 'Sự cố' },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -47,9 +47,9 @@ export default function DashboardLayout({ children }) {
     router.push('/login');
   };
 
-  const userName = user?.TenDangNhap || 'User';
-  const isAdmin = user?.VaiTro === 'admin';
-  const userRole = isAdmin ? 'Property Manager' : user?.VaiTro === 'cudan' ? 'Cư dân' : 'Người dùng';
+  const userName = user?.username || 'User';
+  const isAdmin = user?.role === 'admin';
+  const userRole = isAdmin ? 'Property Manager' : user?.role === 'cudan' ? 'Cư dân' : 'Người dùng';
   const initials = userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
   const menuItems = isAdmin ? adminMenuItems : residentMenuItems;

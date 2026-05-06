@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Form, Input, Button, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, BankOutlined } from '@ant-design/icons';
-import nguoiDungService from '@/services/nguoiDungService';
+import userService from '@/services/userService';
 
 const { Title, Text, Link } = Typography;
 
@@ -13,15 +13,15 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const onFinish = async (values) => {
-    if (values.MatKhau !== values.XacNhanMatKhau) {
+    if (values.password !== values.confirmPassword) {
       return message.error('Mật khẩu xác nhận không khớp!');
     }
     setLoading(true);
     try {
-      const res = await nguoiDungService.register({
-        TenDangNhap: values.TenDangNhap,
-        MatKhau: values.MatKhau,
-        Email: values.Email,
+      const res = await userService.register({
+        username: values.username,
+        password: values.password,
+        email: values.email,
       });
       if (res.data.success) {
         message.success('Đăng ký thành công! Vui lòng đăng nhập.');
@@ -59,21 +59,21 @@ export default function RegisterPage() {
 
         <Form name="register" onFinish={onFinish} layout="vertical" size="large">
           <Form.Item
-            name="TenDangNhap"
+            name="username"
             rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
           >
             <Input prefix={<UserOutlined />} placeholder="Tên đăng nhập" />
           </Form.Item>
 
           <Form.Item
-            name="Email"
+            name="email"
             rules={[{ type: 'email', message: 'Email không hợp lệ!' }]}
           >
             <Input prefix={<MailOutlined />} placeholder="Email (tùy chọn)" />
           </Form.Item>
 
           <Form.Item
-            name="MatKhau"
+            name="password"
             rules={[
               { required: true, message: 'Vui lòng nhập mật khẩu!' },
               { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự!' },
@@ -83,7 +83,7 @@ export default function RegisterPage() {
           </Form.Item>
 
           <Form.Item
-            name="XacNhanMatKhau"
+            name="confirmPassword"
             rules={[{ required: true, message: 'Vui lòng xác nhận mật khẩu!' }]}
           >
             <Input.Password prefix={<LockOutlined />} placeholder="Xác nhận mật khẩu" />

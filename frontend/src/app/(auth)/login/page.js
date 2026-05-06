@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Form, Input, Button, Typography, Checkbox } from 'antd';
 import { UserOutlined, LockOutlined, BankOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import useAuthStore from '@/store/authStore';
-import nguoiDungService from '@/services/nguoiDungService';
+import userService from '@/services/userService';
 import { App as AntdApp } from 'antd';
 
 const { Title, Text, Link } = Typography;
@@ -19,7 +19,7 @@ export default function LoginPage() {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const res = await nguoiDungService.login(values);
+      const res = await userService.login(values);
       if (res.data.success) {
         login(res.data.data.user, res.data.data.token);
         message.success('Đăng nhập thành công!');
@@ -111,7 +111,7 @@ export default function LoginPage() {
             <Form name="login" onFinish={onFinish} layout="vertical" requiredMark={false}>
               <Form.Item
                 label={<span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Tên đăng nhập</span>}
-                name="TenDangNhap"
+                name="username"
                 rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
               >
                 <Input 
@@ -130,7 +130,7 @@ export default function LoginPage() {
 
               <Form.Item
                 label={<span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Mật khẩu</span>}
-                name="MatKhau"
+                name="password"
                 rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
               >
                 <Input.Password 

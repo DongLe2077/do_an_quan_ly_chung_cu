@@ -67,8 +67,8 @@ export default function PaymentModal({ open, onClose, invoice, onConfirm, loadin
     onClose();
   };
 
-  const soTien = Number(invoice?.TongTien || 0);
-  const noiDungCK = `HD ${invoice?.MaHoaDon?.slice(0, 10) || ''} ${invoice?.SoPhong || ''}`.trim();
+  const soTien = Number(invoice?.total_amount || 0);
+  const noiDungCK = `HD ${invoice?.invoice_id?.slice(0, 10) || ''} ${invoice?.apartment_number || ''}`.trim();
   const qrUrl = `https://img.vietqr.io/image/${BANK_INFO.bankCode}-${BANK_INFO.accountNumber}-compact2.png?amount=${soTien}&addInfo=${encodeURIComponent(noiDungCK)}&accountName=${encodeURIComponent(BANK_INFO.accountHolder)}`;
 
   if (!invoice) return null;
@@ -102,7 +102,7 @@ export default function PaymentModal({ open, onClose, invoice, onConfirm, loadin
                 {step === 3 ? 'Thanh toán thành công' : 'Thanh toán hóa đơn'}
               </h3>
               <span style={{ fontSize: 12, opacity: 0.6 }}>
-                {invoice.ThangThu ? `Kỳ thu: Tháng ${invoice.ThangThu}` : ''}
+                {invoice.billing_month ? `Kỳ thu: Tháng ${invoice.billing_month}` : ''}
               </span>
             </div>
           </div>

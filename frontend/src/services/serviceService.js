@@ -1,0 +1,11 @@
+import api from './api';
+
+const serviceService = {
+  getAll: () => api.get('/services'),
+  getById: (id) => api.get(`/services/${id}`),
+  create: (data) => api.post('/services', data),
+  update: (id, data) => api.put(`/services/${id}`, data),
+  delete: (id) => api.delete(`/services/${id}`),
+};
+
+export default serviceService;
