@@ -37,6 +37,7 @@ export default function ChiSoDichVuPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const pageSize = 10;
+  const [deletingUnassigned, setDeletingUnassigned] = useState(false);
   const [form] = Form.useForm();
 
   useEffect(() => { fetchData(); fetchDichVu(); fetchHoaDon(); }, [currentPage]);
@@ -120,6 +121,10 @@ export default function ChiSoDichVuPage() {
     return groups;
   }, [filteredData]);
 
+  const unassignedCount = useMemo(() => {
+    return filteredData.filter(item => !item.apartment_number).length;
+  }, [filteredData]);
+
   const handleSubmit = async (values) => {
     try {
       const payload = {
@@ -144,6 +149,25 @@ export default function ChiSoDichVuPage() {
       message.success('Xóa chỉ số thành công');
       fetchData();
     } catch (error) { message.error(error.response?.data?.message || 'Xóa thất bại'); }
+  };
+
+  const handleDeleteUnassigned = async () => {
+    const targets = filteredData.filter(item => !item.apartment_number);
+    if (targets.length === 0) {
+      message.info('Không có bản ghi chưa gán phòng');
+      return;
+    }
+
+    setDeletingUnassigned(true);
+    try {
+      await Promise.all(targets.map(item => serviceReadingService.delete(item.reading_id)));
+      message.success(`Đã xóa ${targets.length} bản ghi chưa gán phòng`);
+      fetchData();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Xóa thất bại');
+    } finally {
+      setDeletingUnassigned(false);
+    }
   };
 
   const handleDVChange = (serviceId) => {
@@ -256,6 +280,30 @@ export default function ChiSoDichVuPage() {
           }}>
             💰 Tổng: {formatCurrency(totalAll)}
           </div>
+          {unassignedCount > 0 && (
+            <Popconfirm
+              title={`Xóa ${unassignedCount} bản ghi chưa gán phòng?`}
+              onConfirm={handleDeleteUnassigned}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <button
+                className="btn-ghost"
+                disabled={deletingUnassigned}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 12,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  background: '#fee2e2',
+                  color: '#b91c1c',
+                  border: '1px solid #fecaca'
+                }}
+              >
+                {deletingUnassigned ? 'Đang xóa...' : `Xóa ${unassignedCount} chưa gán`}
+              </button>
+            </Popconfirm>
+          )}
         </div>
       </div>
 

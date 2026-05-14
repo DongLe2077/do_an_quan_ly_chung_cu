@@ -366,6 +366,8 @@ function AdminDashboard() {
   const [recentCuDan, setRecentCuDan] = useState([]);
   const [invoiceStats, setInvoiceStats] = useState([]);
 
+  const toNumber = (val) => Number(val || 0);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -377,19 +379,19 @@ function AdminDashboard() {
       if (!data) return;
 
       setStats({
-        toaNha: data.totalBuildings || 0,
-        phong: data.totalApartments || 0,
-        cuDan: data.totalResidents || 0,
-        doanhThu: data.totalRevenue || 0,
-        suCoPending: data.pendingIncidents || 0,
+        toaNha: toNumber(data.totalBuildings),
+        phong: toNumber(data.totalApartments),
+        cuDan: toNumber(data.totalResidents),
+        doanhThu: toNumber(data.totalRevenue),
+        suCoPending: toNumber(data.pendingIncidents),
       });
 
       setRecentSuCo(data.recentIncidents || []);
       setRecentCuDan(data.recentResidents || []);
 
       setInvoiceStats([
-        { name: 'Đã nộp', value: data.invoiceStats?.paid || 0, color: '#34c759' }, // var(--success)
-        { name: 'Chưa nộp', value: data.invoiceStats?.unpaid || 0, color: '#ff3b30' } // var(--danger)
+        { name: 'Đã nộp', value: toNumber(data.invoiceStats?.paid), color: '#34c759' }, // var(--success)
+        { name: 'Chưa nộp', value: toNumber(data.invoiceStats?.unpaid), color: '#ff3b30' } // var(--danger)
       ]);
 
     } catch (error) {
@@ -400,9 +402,10 @@ function AdminDashboard() {
   };
 
   const formatCurrency = (val) => {
-    if (val >= 1e9) return `${(val / 1e9).toFixed(1)}B đ`;
-    if (val >= 1e6) return `${(val / 1e6).toFixed(1)}M đ`;
-    return `${val.toLocaleString('vi-VN')} đ`;
+    const num = Number(val || 0);
+    if (num >= 1e9) return `${(num / 1e9).toFixed(1)}B đ`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M đ`;
+    return `${num.toLocaleString('vi-VN')} đ`;
   };
 
   const getGreeting = () => {
