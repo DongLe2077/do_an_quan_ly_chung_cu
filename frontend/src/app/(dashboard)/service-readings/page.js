@@ -37,7 +37,7 @@ export default function ChiSoDichVuPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const pageSize = 10;
-  const [deletingUnassigned, setDeletingUnassigned] = useState(false);
+  const [deletingRoom, setDeletingRoom] = useState(null);
   const [form] = Form.useForm();
 
   useEffect(() => { fetchData(); fetchDichVu(); fetchHoaDon(); }, [currentPage]);
@@ -121,10 +121,6 @@ export default function ChiSoDichVuPage() {
     return groups;
   }, [filteredData]);
 
-  const unassignedCount = useMemo(() => {
-    return filteredData.filter(item => !item.apartment_number).length;
-  }, [filteredData]);
-
   const handleSubmit = async (values) => {
     try {
       const payload = {
@@ -151,22 +147,22 @@ export default function ChiSoDichVuPage() {
     } catch (error) { message.error(error.response?.data?.message || 'Xóa thất bại'); }
   };
 
-  const handleDeleteUnassigned = async () => {
-    const targets = filteredData.filter(item => !item.apartment_number);
+  const handleDeleteRoom = async (roomName) => {
+    const targets = groupedByRoom[roomName] || [];
     if (targets.length === 0) {
-      message.info('Không có bản ghi chưa gán phòng');
+      message.info('Không có bản ghi để xóa');
       return;
     }
 
-    setDeletingUnassigned(true);
+    setDeletingRoom(roomName);
     try {
       await Promise.all(targets.map(item => serviceReadingService.delete(item.reading_id)));
-      message.success(`Đã xóa ${targets.length} bản ghi chưa gán phòng`);
+      message.success(`Đã xóa ${targets.length} bản ghi của phòng ${roomName}`);
       fetchData();
     } catch (error) {
       message.error(error.response?.data?.message || 'Xóa thất bại');
     } finally {
-      setDeletingUnassigned(false);
+      setDeletingRoom(null);
     }
   };
 
@@ -280,30 +276,6 @@ export default function ChiSoDichVuPage() {
           }}>
             💰 Tổng: {formatCurrency(totalAll)}
           </div>
-          {unassignedCount > 0 && (
-            <Popconfirm
-              title={`Xóa ${unassignedCount} bản ghi chưa gán phòng?`}
-              onConfirm={handleDeleteUnassigned}
-              okText="Xóa"
-              cancelText="Hủy"
-            >
-              <button
-                className="btn-ghost"
-                disabled={deletingUnassigned}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: 12,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  background: '#fee2e2',
-                  color: '#b91c1c',
-                  border: '1px solid #fecaca'
-                }}
-              >
-                {deletingUnassigned ? 'Đang xóa...' : `Xóa ${unassignedCount} chưa gán`}
-              </button>
-            </Popconfirm>
-          )}
         </div>
       </div>
 
@@ -351,10 +323,34 @@ export default function ChiSoDichVuPage() {
                       )}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 12, opacity: 0.6 }}>Tổng tiền dịch vụ</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#ffd60a' }}>
-                      {formatCurrency(roomTotal)}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <Popconfirm
+                      title={`Xóa tất cả chỉ số phòng ${roomName}?`}
+                      onConfirm={() => handleDeleteRoom(roomName)}
+                      okText="Xóa"
+                      cancelText="Hủy"
+                    >
+                      <button
+                        className="btn-ghost"
+                        disabled={deletingRoom === roomName}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 10,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          background: '#fee2e2',
+                          color: '#b91c1c',
+                          border: '1px solid #fecaca'
+                        }}
+                      >
+                        {deletingRoom === roomName ? 'Đang xóa...' : 'Xóa chỉ số phòng'}
+                      </button>
+                    </Popconfirm>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 12, opacity: 0.6 }}>Tổng tiền dịch vụ</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#ffd60a' }}>
+                        {formatCurrency(roomTotal)}
+                      </div>
                     </div>
                   </div>
                 </div>
