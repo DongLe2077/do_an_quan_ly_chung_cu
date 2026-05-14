@@ -24,7 +24,7 @@ const ResidentModel = {
             query += ` WHERE cd.full_name LIKE ? OR cd.phone LIKE ? OR cd.id_card LIKE ?`;
             queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
-        query += ` ORDER BY cd.created_at DESC LIMIT ? OFFSET ?`;
+        query += ` ORDER BY cd.resident_id DESC LIMIT ? OFFSET ?`;
         queryParams.push(limit, offset);
 
         const [rows] = await db.query(query, queryParams);

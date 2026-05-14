@@ -30,7 +30,7 @@ const SuCoModel = {
             queryParams.push(status);
         }
 
-        query += ` ORDER BY sc.created_at DESC LIMIT ? OFFSET ?`;
+        query += ` ORDER BY sc.report_date DESC LIMIT ? OFFSET ?`;
         queryParams.push(limit, offset);
 
         const [rows] = await db.query(query, queryParams);

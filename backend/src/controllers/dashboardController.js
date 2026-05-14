@@ -28,7 +28,7 @@ const dashboardController = {
         SELECT sc.*, p.apartment_number 
         FROM incidents sc 
         LEFT JOIN apartments p ON sc.apartment_id = p.apartment_id
-        ORDER BY sc.created_at DESC 
+        ORDER BY sc.report_date DESC 
         LIMIT 3
       `);
 
@@ -36,7 +36,7 @@ const dashboardController = {
         SELECT cd.*, p.apartment_number 
         FROM residents cd 
         LEFT JOIN apartments p ON cd.apartment_id = p.apartment_id
-        ORDER BY cd.created_at DESC 
+        ORDER BY cd.resident_id DESC 
         LIMIT 3
       `);
 
