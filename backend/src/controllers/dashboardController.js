@@ -1,5 +1,5 @@
 const db = require('../config/db.config');
-const { formatResponse } = require('../utils/responseFormat');
+const response = require('../utils/responseFormat');
 
 const dashboardController = {
   getStats: async (req, res) => {
@@ -54,10 +54,10 @@ const dashboardController = {
         recentResidents
       };
 
-      res.status(200).json(formatResponse(true, stats, 'Lấy thống kê thành công'));
+      return response.success(res, stats, 'Lấy thống kê thành công');
     } catch (error) {
       console.error('Lỗi API Dashboard Stats:', error);
-      res.status(500).json(formatResponse(false, null, 'Lỗi server khi lấy thống kê'));
+      return response.error(res, 'Lỗi server khi lấy thống kê');
     }
   }
 };
