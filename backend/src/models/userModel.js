@@ -7,6 +7,16 @@ const NguoiDungModel = {
         return rows;
     },
 
+    getAllPaginated: async (limit, offset) => {
+        const [rows] = await db.query('SELECT user_id, username, role, status, email FROM users LIMIT ? OFFSET ?', [limit, offset]);
+        return rows;
+    },
+
+    count: async () => {
+        const [rows] = await db.query('SELECT COUNT(*) as total FROM users');
+        return rows[0].total;
+    },
+
     // Lấy người dùng theo user_id
     getById: async (userId) => {
         const [rows] = await db.query(

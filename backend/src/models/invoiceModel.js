@@ -11,6 +11,53 @@ const HoaDonModel = {
         return rows;
     },
 
+    getAllPaginated: async (limit, offset, search = '', status = '') => {
+        let query = `
+            SELECT hd.*, p.apartment_number 
+            FROM invoices hd 
+            LEFT JOIN apartments p ON hd.apartment_id = p.apartment_id
+            WHERE 1=1
+        `;
+        let queryParams = [];
+
+        if (search) {
+            query += ` AND p.apartment_number LIKE ?`;
+            queryParams.push(`%${search}%`);
+        }
+        if (status) {
+            query += ` AND hd.status = ?`;
+            queryParams.push(status);
+        }
+
+        query += ` ORDER BY hd.created_at DESC LIMIT ? OFFSET ?`;
+        queryParams.push(limit, offset);
+
+        const [rows] = await db.query(query, queryParams);
+        return rows;
+    },
+
+    count: async (search = '', status = '') => {
+        let query = `
+            SELECT COUNT(*) as total 
+            FROM invoices hd 
+            LEFT JOIN apartments p ON hd.apartment_id = p.apartment_id
+            WHERE 1=1
+        `;
+        let queryParams = [];
+
+        if (search) {
+            query += ` AND p.apartment_number LIKE ?`;
+            queryParams.push(`%${search}%`);
+        }
+        if (status) {
+            query += ` AND hd.status = ?`;
+            queryParams.push(status);
+        }
+
+        const [rows] = await db.query(query, queryParams);
+        return rows[0].total;
+    },
+
     getById: async (invoiceId) => {
         const [rows] = await db.query(`
             SELECT hd.*, p.apartment_number 

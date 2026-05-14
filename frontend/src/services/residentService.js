@@ -1,7 +1,7 @@
 import api from './api';
 
 const residentService = {
-  getAll: () => api.get('/residents'),
+  getAll: (params) => api.get('/residents', { params }),
   getById: (id) => api.get(`/residents/${id}`),
   getByApartment: (apartmentId) => api.get(`/residents/apartment/${apartmentId}`),
   getByUser: (userId) => api.get(`/residents/user/${userId}`),

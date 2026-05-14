@@ -1,7 +1,7 @@
 import api from './api';
 
 const incidentService = {
-  getAll: () => api.get('/incidents'),
+  getAll: (params) => api.get('/incidents', { params }),
   getById: (id) => api.get(`/incidents/${id}`),
   getByTrangThai: (status) => api.get(`/incidents/status/${status}`),
   getByNguoiBao: (reporterId) => api.get(`/incidents/reporter/${reporterId}`),

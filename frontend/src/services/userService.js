@@ -3,7 +3,7 @@ import api from './api';
 const userService = {
   login: (data) => api.post('/users/login', data),
   register: (data) => api.post('/users/register', data),
-  getAll: () => api.get('/users'),
+  getAll: (params) => api.get('/users', { params }),
   getById: (id) => api.get(`/users/${id}`),
   getProfile: () => api.get('/users/me/profile'),
   update: (id, data) => api.put(`/users/${id}`, data),

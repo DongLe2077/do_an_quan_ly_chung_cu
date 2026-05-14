@@ -11,6 +11,7 @@ const incidentRoutes = require('./incidentRoutes');
 const buildingRoutes = require('./buildingRoutes');
 const serviceRoutes = require('./serviceRoutes');
 const uploadRoutes = require('./uploadRoutes');
+const dashboardRoutes = require('./dashboardRoutes');
 
 // Sử dụng các routes - English API paths
 router.use('/users', userRoutes);
@@ -22,6 +23,7 @@ router.use('/incidents', incidentRoutes);
 router.use('/buildings', buildingRoutes);
 router.use('/services', serviceRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 // Route kiểm tra API
 router.get('/', (req, res) => {

@@ -12,6 +12,36 @@ const ResidentModel = {
         return rows;
     },
 
+    getAllPaginated: async (limit, offset, search = '') => {
+        let query = `
+            SELECT cd.*, p.apartment_number, nd.username
+            FROM residents cd 
+            LEFT JOIN apartments p ON cd.apartment_id = p.apartment_id
+            LEFT JOIN users nd ON cd.user_id = nd.user_id
+        `;
+        let queryParams = [];
+        if (search) {
+            query += ` WHERE cd.full_name LIKE ? OR cd.phone LIKE ? OR cd.id_card LIKE ?`;
+            queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        query += ` ORDER BY cd.created_at DESC LIMIT ? OFFSET ?`;
+        queryParams.push(limit, offset);
+
+        const [rows] = await db.query(query, queryParams);
+        return rows;
+    },
+
+    count: async (search = '') => {
+        let query = 'SELECT COUNT(*) as total FROM residents cd';
+        let queryParams = [];
+        if (search) {
+            query += ` WHERE cd.full_name LIKE ? OR cd.phone LIKE ? OR cd.id_card LIKE ?`;
+            queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        const [rows] = await db.query(query, queryParams);
+        return rows[0].total;
+    },
+
     // Lấy cư dân theo resident_id
     getById: async (residentId) => {
         const [rows] = await db.query(`

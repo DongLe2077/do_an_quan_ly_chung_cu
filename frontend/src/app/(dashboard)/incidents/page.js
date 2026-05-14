@@ -23,12 +23,17 @@ export default function SuCoPage() {
   const [xuLyModalOpen, setXuLyModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [filterTrangThai, setFilterTrangThai] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [cuDanInfo, setCuDanInfo] = useState(null);
   const [fileList, setFileList] = useState([]);
   const [form] = Form.useForm();
   const [xuLyForm] = Form.useForm();
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
 
   useEffect(() => {
     if (user) {
@@ -36,7 +41,7 @@ export default function SuCoPage() {
       if (!isAdmin) fetchResidentInfo();
       else fetchPhong();
     }
-  }, [user]);
+  }, [user, currentPage, searchText, filterTrangThai]);
 
   const fetchResidentInfo = async () => {
     try {
@@ -50,11 +55,20 @@ export default function SuCoPage() {
     try {
       let res;
       if (isAdmin) {
-        res = await incidentService.getAll();
+        res = await incidentService.getAll({ 
+          page: currentPage, limit: pageSize, search: searchText, status: filterTrangThai 
+        });
+        if (res.data?.pagination) {
+          setData(res.data.data || []);
+          setTotalItems(res.data.pagination.total);
+        } else {
+          setData(res.data?.data || []);
+          setTotalItems((res.data?.data || []).length);
+        }
       } else {
         res = await incidentService.getByNguoiBao(user.user_id);
+        setData(res.data?.data || []);
       }
-      setData(res.data?.data || []);
     } catch { message.error('Lỗi tải danh sách sự cố'); }
     finally { setLoading(false); }
   };
@@ -128,7 +142,7 @@ export default function SuCoPage() {
     } catch (error) { message.error(error.response?.data?.message || 'Xóa thất bại'); }
   };
 
-  const filteredData = filterTrangThai ? data.filter(s => s.status === filterTrangThai) : data;
+  const filteredData = data;
 
   const columns = [
     { title: 'Mã SC', dataIndex: 'incident_id', key: 'incident_id', width: 140, ellipsis: true },
@@ -246,19 +260,40 @@ export default function SuCoPage() {
 
       {/* Filter & Stats */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           {['Tất cả', 'Chờ duyệt', 'Đang xử lý', 'Đã xử lý'].map(status => (
             <button 
               key={status}
-              onClick={() => setFilterTrangThai(status === 'Tất cả' ? null : status)}
+              onClick={() => { setFilterTrangThai(status === 'Tất cả' ? null : status); setCurrentPage(1); }}
               className={`filter-chip ${((!filterTrangThai && status === 'Tất cả') || filterTrangThai === status) ? 'active' : ''}`}
             >
               {status}
             </button>
           ))}
         </div>
+
+        {isAdmin && (
+          <div style={{ position: 'relative', width: 250 }}>
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Tìm sự cố, phòng..."
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  setSearchText(searchInput);
+                  setCurrentPage(1);
+                }
+              }}
+              style={{ paddingLeft: 36, width: '100%', borderRadius: 20 }}
+            />
+          </div>
+        )}
+
         <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          Tổng cộng: <b>{filteredData.length}</b> sự cố
+          Tổng cộng: <b>{totalItems}</b> sự cố
         </div>
       </div>
 
@@ -524,7 +559,17 @@ export default function SuCoPage() {
 
       <div className="table-wrapper">
         <Table columns={columns} dataSource={filteredData} rowKey="incident_id" loading={loading} scroll={{ x: 1100 }}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Tổng ${t} sự cố` }} />
+          pagination={{ 
+            current: currentPage,
+            pageSize: pageSize,
+            total: isAdmin ? totalItems : filteredData.length,
+            showSizeChanger: false, 
+            showTotal: (t) => `Tổng ${t} sự cố` 
+          }}
+          onChange={(pagination) => {
+            setCurrentPage(pagination.current);
+          }}
+        />
       </div>
     </div>
   );

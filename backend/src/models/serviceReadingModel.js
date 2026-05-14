@@ -15,6 +15,25 @@ const ChiSoDichVuModel = {
         return rows;
     },
 
+    getAllPaginated: async (limit, offset) => {
+        const [rows] = await db.query(`
+            SELECT csdv.*, dv.service_name, dv.unit_price, dv.service_type, dv.unit,
+                   hd.invoice_id as invoice_id_ref, hd.billing_month, p.apartment_number
+            FROM service_readings csdv 
+            LEFT JOIN services dv ON csdv.service_id = dv.service_id
+            LEFT JOIN invoices hd ON csdv.invoice_id = hd.invoice_id
+            LEFT JOIN apartments p ON hd.apartment_id = p.apartment_id
+            ORDER BY csdv.reading_date DESC
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+        return rows;
+    },
+
+    count: async () => {
+        const [rows] = await db.query('SELECT COUNT(*) as total FROM service_readings');
+        return rows[0].total;
+    },
+
     // Lấy chỉ số dịch vụ theo reading_id
     getById: async (readingId) => {
         const [rows] = await db.query(`

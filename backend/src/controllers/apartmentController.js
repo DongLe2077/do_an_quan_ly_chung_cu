@@ -1,11 +1,22 @@
 const PhongModel = require('../models/apartmentModel');
 const response = require('../utils/responseFormat');
+const { parsePagination, isPaginated } = require('../utils/pagination');
 
 const generateId = () => 'PH' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
 
 const PhongController = {
     getAll: async (req, res) => {
         try {
+            if (isPaginated(req.query)) {
+                const { page, limit, offset } = parsePagination(req.query);
+                const search = req.query.search || '';
+                const buildingId = req.query.building_id || '';
+                const [data, total] = await Promise.all([
+                    PhongModel.getAllPaginated(limit, offset, search, buildingId),
+                    PhongModel.count(search, buildingId)
+                ]);
+                return response.paginate(res, data, page, limit, total, 'Lấy danh sách phòng thành công');
+            }
             const data = await PhongModel.getAll();
             return response.success(res, data, 'Lấy danh sách phòng thành công');
         } catch (error) {

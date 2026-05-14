@@ -1,12 +1,21 @@
 const ChiSoDichVuModel = require('../models/serviceReadingModel');
 const HoaDonModel = require('../models/invoiceModel');
 const response = require('../utils/responseFormat');
+const { parsePagination, isPaginated } = require('../utils/pagination');
 
 const generateId = () => 'CS' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
 
 const ChiSoDichVuController = {
     getAll: async (req, res) => {
         try {
+            if (isPaginated(req.query)) {
+                const { page, limit, offset } = parsePagination(req.query);
+                const [data, total] = await Promise.all([
+                    ChiSoDichVuModel.getAllPaginated(limit, offset),
+                    ChiSoDichVuModel.count()
+                ]);
+                return response.paginate(res, data, page, limit, total, 'Lấy danh sách chỉ số dịch vụ thành công');
+            }
             const data = await ChiSoDichVuModel.getAll();
             return response.success(res, data, 'Lấy danh sách chỉ số dịch vụ thành công');
         } catch (error) {

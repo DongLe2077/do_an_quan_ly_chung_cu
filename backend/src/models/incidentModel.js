@@ -11,6 +11,54 @@ const SuCoModel = {
         return rows;
     },
 
+    getAllPaginated: async (limit, offset, search = '', status = '') => {
+        let query = `
+            SELECT sc.*, nd.username as reporter_name, p.apartment_number
+            FROM incidents sc 
+            LEFT JOIN users nd ON sc.reporter_id = nd.user_id
+            LEFT JOIN apartments p ON sc.apartment_id = p.apartment_id
+            WHERE 1=1
+        `;
+        let queryParams = [];
+
+        if (search) {
+            query += ` AND (sc.title LIKE ? OR sc.description LIKE ? OR p.apartment_number LIKE ?)`;
+            queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        if (status) {
+            query += ` AND sc.status = ?`;
+            queryParams.push(status);
+        }
+
+        query += ` ORDER BY sc.created_at DESC LIMIT ? OFFSET ?`;
+        queryParams.push(limit, offset);
+
+        const [rows] = await db.query(query, queryParams);
+        return rows;
+    },
+
+    count: async (search = '', status = '') => {
+        let query = `
+            SELECT COUNT(*) as total 
+            FROM incidents sc 
+            LEFT JOIN apartments p ON sc.apartment_id = p.apartment_id
+            WHERE 1=1
+        `;
+        let queryParams = [];
+
+        if (search) {
+            query += ` AND (sc.title LIKE ? OR sc.description LIKE ? OR p.apartment_number LIKE ?)`;
+            queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        if (status) {
+            query += ` AND sc.status = ?`;
+            queryParams.push(status);
+        }
+
+        const [rows] = await db.query(query, queryParams);
+        return rows[0].total;
+    },
+
     getById: async (incidentId) => {
         const [rows] = await db.query(`
             SELECT sc.*, nd.username as reporter_name, p.apartment_number

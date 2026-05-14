@@ -27,17 +27,24 @@ export default function NguoiDungPage() {
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 8;
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
   const [form] = Form.useForm();
   const [roleForm] = Form.useForm();
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [currentPage]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await userService.getAll();
-      setData(res.data?.data || []);
+      const res = await userService.getAll({ page: currentPage, limit: pageSize });
+      if (res.data?.pagination) {
+        setData(res.data.data || []);
+        setTotalItems(res.data.pagination.total);
+      } else {
+        setData(res.data?.data || []);
+        setTotalItems((res.data?.data || []).length);
+      }
     } catch { message.error('Lỗi tải danh sách người dùng'); }
     finally { setLoading(false); }
   };
@@ -114,8 +121,8 @@ export default function NguoiDungPage() {
     });
   }, [data, searchText, filterRole, filterStatus]);
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const paginatedData = filteredData;
 
   // Stats
   const stats = useMemo(() => ({
@@ -307,7 +314,7 @@ export default function NguoiDungPage() {
         {filteredData.length > 0 && (
           <div className="pagination">
             <div className="pagination-info">
-              Hiển thị {Math.min((currentPage - 1) * pageSize + 1, filteredData.length)} - {Math.min(currentPage * pageSize, filteredData.length)} của {filteredData.length} người dùng
+              Hiển thị {Math.min((currentPage - 1) * pageSize + 1, totalItems)} - {Math.min(currentPage * pageSize, totalItems)} của {totalItems} người dùng
             </div>
             <div className="pagination-buttons">
               <button className="pagination-btn" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>‹</button>

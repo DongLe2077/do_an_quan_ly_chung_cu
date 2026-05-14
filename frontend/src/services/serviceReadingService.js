@@ -1,7 +1,7 @@
 import api from './api';
 
 const serviceReadingService = {
-  getAll: () => api.get('/service-readings'),
+  getAll: (params) => api.get('/service-readings', { params }),
   getById: (id) => api.get(`/service-readings/${id}`),
   getByInvoice: (invoiceId) => api.get(`/service-readings/invoice/${invoiceId}`),
   getByNgayGhi: (readingDate) => api.get(`/service-readings/date/${readingDate}`),

@@ -34,15 +34,24 @@ export default function ChiSoDichVuPage() {
   const [selectedDVType, setSelectedDVType] = useState(null);
   const [filterMonth, setFilterMonth] = useState('');
   const [filterRoom, setFilterRoom] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
   const [form] = Form.useForm();
 
-  useEffect(() => { fetchData(); fetchDichVu(); fetchHoaDon(); }, []);
+  useEffect(() => { fetchData(); fetchDichVu(); fetchHoaDon(); }, [currentPage]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await serviceReadingService.getAll();
-      setData(res.data?.data || []);
+      const res = await serviceReadingService.getAll({ page: currentPage, limit: pageSize });
+      if (res.data?.pagination) {
+        setData(res.data.data || []);
+        setTotalItems(res.data.pagination.total);
+      } else {
+        setData(res.data?.data || []);
+        setTotalItems((res.data?.data || []).length);
+      }
     } catch { message.error('Lỗi tải danh sách chỉ số'); }
     finally { setLoading(false); }
   };
@@ -402,6 +411,26 @@ export default function ChiSoDichVuPage() {
           <p style={{ color: 'var(--text-muted)', margin: 0 }}>
             {filterMonth ? `Không tìm thấy bản ghi nào cho tháng ${filterMonth}` : 'Bấm "Thêm chỉ số" để bắt đầu ghi nhận.'}
           </p>
+        </div>
+      )}
+
+      {/* PAGINATION */}
+      {filteredData.length > 0 && (
+        <div className="pagination" style={{ marginTop: 24 }}>
+          <div className="pagination-info">
+            Hiển thị {Math.min((currentPage - 1) * pageSize + 1, totalItems)} - {Math.min(currentPage * pageSize, totalItems)} của {totalItems} bản ghi
+          </div>
+          <div className="pagination-buttons">
+            <button className="pagination-btn" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>‹</button>
+            {Array.from({ length: Math.ceil(totalItems / pageSize) }, (_, i) => (
+              <button
+                key={i + 1}
+                className={`pagination-btn ${currentPage === i + 1 ? 'active' : ''}`}
+                onClick={() => setCurrentPage(i + 1)}
+              >{i + 1}</button>
+            ))}
+            <button className="pagination-btn" onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalItems / pageSize), p + 1))} disabled={currentPage === Math.ceil(totalItems / pageSize)}>›</button>
+          </div>
         </div>
       )}
 

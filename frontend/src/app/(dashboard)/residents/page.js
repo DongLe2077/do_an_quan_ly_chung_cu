@@ -17,16 +17,26 @@ export default function CuDanPage() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
   const [form] = Form.useForm();
 
-  useEffect(() => { fetchData(); fetchPhong(); fetchNguoiDung(); }, []);
+  // Thêm một state để giữ text search khi đang gõ
+  const [searchInput, setSearchInput] = useState('');
+
+  useEffect(() => { fetchData(); fetchPhong(); fetchNguoiDung(); }, [currentPage, searchText]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await residentService.getAll();
-      setData(res.data?.data || []);
+      const res = await residentService.getAll({ page: currentPage, limit: pageSize, search: searchText });
+      if (res.data?.pagination) {
+        setData(res.data.data || []);
+        setTotalItems(res.data.pagination.total);
+      } else {
+        setData(res.data?.data || []);
+        setTotalItems((res.data?.data || []).length);
+      }
     } catch { message.error('Lỗi tải danh sách cư dân'); }
     finally { setLoading(false); }
   };
@@ -76,15 +86,9 @@ export default function CuDanPage() {
     setModalOpen(true);
   };
 
-  const filteredData = data.filter(item =>
-    !searchText ||
-    item.full_name?.toLowerCase().includes(searchText.toLowerCase()) ||
-    item.id_card?.includes(searchText) ||
-    item.phone?.includes(searchText)
-  );
-
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const filteredData = data;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const paginatedData = filteredData;
 
   const getInitials = (name) => {
     if (!name) return 'CD';
@@ -112,6 +116,30 @@ export default function CuDanPage() {
           <button className="btn btn-primary" onClick={openCreate}>
             <span>+</span> Tạo mới
           </button>
+        </div>
+      </div>
+
+      {/* FILTER BAR */}
+      <div className="filter-bar" style={{ marginBottom: 20 }}>
+        <div style={{ position: 'relative', flex: 1, maxWidth: 400, display: 'flex', gap: 8 }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 14 }}>🔍</span>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Tìm theo tên, SĐT, CCCD..."
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  setSearchText(searchInput);
+                  setCurrentPage(1);
+                }
+              }}
+              style={{ paddingLeft: 36, width: '100%' }}
+            />
+          </div>
+          <button className="btn btn-primary" onClick={() => { setSearchText(searchInput); setCurrentPage(1); }}>Tìm kiếm</button>
         </div>
       </div>
 
@@ -175,7 +203,7 @@ export default function CuDanPage() {
         {filteredData.length > 0 && (
           <div className="pagination">
             <div className="pagination-info">
-              Hiển thị {Math.min((currentPage - 1) * pageSize + 1, filteredData.length)} - {Math.min(currentPage * pageSize, filteredData.length)} của {filteredData.length.toLocaleString()} cư dân
+              Hiển thị {Math.min((currentPage - 1) * pageSize + 1, totalItems)} - {Math.min(currentPage * pageSize, totalItems)} của {totalItems.toLocaleString()} cư dân
             </div>
             <div className="pagination-buttons">
               <button className="pagination-btn" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>‹</button>

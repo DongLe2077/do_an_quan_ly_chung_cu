@@ -1,7 +1,7 @@
 import api from './api';
 
 const apartmentService = {
-  getAll: () => api.get('/apartments'),
+  getAll: (params) => api.get('/apartments', { params }),
   getById: (id) => api.get(`/apartments/${id}`),
   getByBuilding: (buildingId) => api.get(`/apartments/building/${buildingId}`),
   create: (data) => api.post('/apartments', data),

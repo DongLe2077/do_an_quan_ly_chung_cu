@@ -7,6 +7,16 @@ const DanhSachDichVuModel = {
         return rows;
     },
 
+    getAllPaginated: async (limit, offset) => {
+        const [rows] = await db.query('SELECT * FROM services LIMIT ? OFFSET ?', [limit, offset]);
+        return rows;
+    },
+
+    count: async () => {
+        const [rows] = await db.query('SELECT COUNT(*) as total FROM services');
+        return rows[0].total;
+    },
+
     // Lấy dịch vụ theo service_id
     getById: async (serviceId) => {
         const [rows] = await db.query('SELECT * FROM services WHERE service_id = ?', [serviceId]);

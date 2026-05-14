@@ -13,19 +13,30 @@ export default function PhongPage() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [filterToaNha, setFilterToaNha] = useState('');
   const [filterTrangThai, setFilterTrangThai] = useState('');
+  const [searchText, setSearchText] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const pageSize = 12;
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailData, setDetailData] = useState(null);
   const [form] = Form.useForm();
 
-  useEffect(() => { fetchData(); fetchToaNha(); }, []);
+  useEffect(() => { fetchData(); fetchToaNha(); }, [currentPage, searchText, filterToaNha]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await apartmentService.getAll();
-      setData(res.data?.data || []);
+      const res = await apartmentService.getAll({ 
+        page: currentPage, limit: pageSize, search: searchText, building_id: filterToaNha 
+      });
+      if (res.data?.pagination) {
+        setData(res.data.data || []);
+        setTotalItems(res.data.pagination.total);
+      } else {
+        setData(res.data?.data || []);
+        setTotalItems((res.data?.data || []).length);
+      }
     } catch { message.error('Lỗi tải danh sách phòng'); }
     finally { setLoading(false); }
   };
@@ -85,15 +96,15 @@ export default function PhongPage() {
   };
 
   const applyFilters = () => {
+    setSearchText(searchInput);
     setCurrentPage(1);
   };
 
   let filteredData = data;
-  if (filterToaNha) filteredData = filteredData.filter(p => p.building_id === filterToaNha);
   if (filterTrangThai) filteredData = filteredData.filter(p => p.status === filterTrangThai);
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const paginatedData = filteredData;
 
   const getStatusBadge = (status) => {
     if (status === 'Đang sử dụng') return <span className="badge badge-dark">ĐANG SỬ DỤNG</span>;
@@ -148,10 +159,25 @@ export default function PhongPage() {
 
       {/* FILTER BAR */}
       <div className="filter-bar">
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Tìm theo số phòng..."
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') applyFilters();
+            }}
+            style={{ paddingLeft: 36, width: '100%', border: 'none', background: 'transparent' }}
+          />
+        </div>
+
         <select
           className="filter-select"
           value={filterTrangThai}
-          onChange={(e) => setFilterTrangThai(e.target.value)}
+          onChange={(e) => { setFilterTrangThai(e.target.value); setCurrentPage(1); }}
         >
           <option value="">Tất cả trạng thái</option>
           <option value="Trống">Phòng trống</option>
@@ -162,7 +188,7 @@ export default function PhongPage() {
         <select
           className="filter-select"
           value={filterToaNha}
-          onChange={(e) => setFilterToaNha(e.target.value)}
+          onChange={(e) => { setFilterToaNha(e.target.value); setCurrentPage(1); }}
         >
           <option value="">Tất cả tòa nhà</option>
           {toaNhaList.map(t => (
@@ -217,7 +243,7 @@ export default function PhongPage() {
       {filteredData.length > 0 && (
         <div className="pagination">
           <div className="pagination-info">
-            Hiển thị {Math.min((currentPage - 1) * pageSize + 1, filteredData.length)} - {Math.min(currentPage * pageSize, filteredData.length)} trong {filteredData.length.toLocaleString()} căn hộ
+            Hiển thị {Math.min((currentPage - 1) * pageSize + 1, totalItems)} - {Math.min(currentPage * pageSize, totalItems)} trong {totalItems.toLocaleString()} căn hộ
           </div>
           <div className="pagination-buttons">
             <button className="pagination-btn" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>‹</button>

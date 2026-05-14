@@ -1,7 +1,7 @@
 import api from './api';
 
 const invoiceService = {
-  getAll: () => api.get('/invoices'),
+  getAll: (params) => api.get('/invoices', { params }),
   getById: (id) => api.get(`/invoices/${id}`),
   getByApartment: (apartmentId) => api.get(`/invoices/apartment/${apartmentId}`),
   getByTrangThai: (status) => api.get(`/invoices/status/${status}`),

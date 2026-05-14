@@ -7,6 +7,16 @@ const ToaNhaModel = {
         return rows;
     },
 
+    getAllPaginated: async (limit, offset) => {
+        const [rows] = await db.query('SELECT * FROM buildings LIMIT ? OFFSET ?', [limit, offset]);
+        return rows;
+    },
+
+    count: async () => {
+        const [rows] = await db.query('SELECT COUNT(*) as total FROM buildings');
+        return rows[0].total;
+    },
+
     // Lấy tòa nhà theo building_id
     getById: async (buildingId) => {
         const [rows] = await db.query('SELECT * FROM buildings WHERE building_id = ?', [buildingId]);

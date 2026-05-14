@@ -1,11 +1,20 @@
 const DanhSachDichVuModel = require('../models/serviceModel');
 const response = require('../utils/responseFormat');
+const { parsePagination, isPaginated } = require('../utils/pagination');
 
 const generateId = () => 'DV' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
 
 const DanhSachDichVuController = {
     getAll: async (req, res) => {
         try {
+            if (isPaginated(req.query)) {
+                const { page, limit, offset } = parsePagination(req.query);
+                const [data, total] = await Promise.all([
+                    DanhSachDichVuModel.getAllPaginated(limit, offset),
+                    DanhSachDichVuModel.count()
+                ]);
+                return response.paginate(res, data, page, limit, total, 'Lấy danh sách dịch vụ thành công');
+            }
             const data = await DanhSachDichVuModel.getAll();
             return response.success(res, data, 'Lấy danh sách dịch vụ thành công');
         } catch (error) {

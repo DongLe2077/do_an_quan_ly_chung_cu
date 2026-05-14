@@ -9,6 +9,7 @@ import residentService from '@/services/residentService';
 import invoiceService from '@/services/invoiceService';
 import incidentService from '@/services/incidentService';
 import serviceReadingService from '@/services/serviceReadingService';
+import dashboardService from '@/services/dashboardService';
 import { Modal, Form, Input, message, Table, Descriptions, Badge } from 'antd';
 import PaymentModal from '@/components/PaymentModal';
 
@@ -371,41 +372,24 @@ function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const [toaNhaRes, phongRes, cuDanRes, hoaDonRes, suCoRes] = await Promise.all([
-        buildingService.getAll().catch(() => ({ data: { data: [] } })),
-        apartmentService.getAll().catch(() => ({ data: { data: [] } })),
-        residentService.getAll().catch(() => ({ data: { data: [] } })),
-        invoiceService.getAll().catch(() => ({ data: { data: [] } })),
-        incidentService.getAll().catch(() => ({ data: { data: [] } })),
-      ]);
-
-      const toaNhaList = toaNhaRes.data?.data || [];
-      const phongList = phongRes.data?.data || [];
-      const cuDanList = cuDanRes.data?.data || [];
-      const hoaDonList = hoaDonRes.data?.data || [];
-      const suCoList = suCoRes.data?.data || [];
-
-      const suCoPending = suCoList.filter(s => s.status === 'Chờ duyệt' || s.status === 'Đang xử lý');
-      const totalDoanhThu = hoaDonList.reduce((sum, h) => sum + (Number(h.total_amount) || 0), 0);
+      const res = await dashboardService.getStats();
+      const data = res.data?.data;
+      if (!data) return;
 
       setStats({
-        toaNha: toaNhaList.length,
-        phong: phongList.length,
-        cuDan: cuDanList.length,
-        doanhThu: totalDoanhThu,
-        suCoPending: suCoPending.length,
+        toaNha: data.totalBuildings || 0,
+        phong: data.totalApartments || 0,
+        cuDan: data.totalResidents || 0,
+        doanhThu: data.totalRevenue || 0,
+        suCoPending: data.pendingIncidents || 0,
       });
 
-      setRecentSuCo(suCoList.slice(0, 3));
-      setRecentCuDan(cuDanList.slice(0, 3));
+      setRecentSuCo(data.recentIncidents || []);
+      setRecentCuDan(data.recentResidents || []);
 
-      // Thống kê trạng thái hóa đơn
-      const daThanhToan = hoaDonList.filter(h => h.status === 'Đã thanh toán').length;
-      const chuaThanhToan = hoaDonList.filter(h => h.status === 'Chưa thanh toán').length;
-      
       setInvoiceStats([
-        { name: 'Đã nộp', value: daThanhToan, color: '#34c759' }, // var(--success)
-        { name: 'Chưa nộp', value: chuaThanhToan, color: '#ff3b30' } // var(--danger)
+        { name: 'Đã nộp', value: data.invoiceStats?.paid || 0, color: '#34c759' }, // var(--success)
+        { name: 'Chưa nộp', value: data.invoiceStats?.unpaid || 0, color: '#ff3b30' } // var(--danger)
       ]);
 
     } catch (error) {
@@ -641,29 +625,11 @@ function AdminDashboard() {
                 {getSuCoStatusBadge(sc.status)}
               </div>
             )) : (
-              <>
-                <div className="incident-item">
-                  <div className="incident-info">
-                    <h4>Rò rỉ nước phòng 1204</h4>
-                    <span>Tòa A1 • 15 phút trước</span>
-                  </div>
-                  <span className="badge badge-danger">KHẨN CẤP</span>
-                </div>
-                <div className="incident-item">
-                  <div className="incident-info">
-                    <h4>Hỏng đèn hành lang</h4>
-                    <span>Tòa B2 • 1 giờ trước</span>
-                  </div>
-                  <span className="badge badge-warning">ĐANG CHỜ</span>
-                </div>
-                <div className="incident-item">
-                  <div className="incident-info">
-                    <h4>Bảo trì thang máy số 3</h4>
-                    <span>Lịch định kỳ • 2 giờ trước</span>
-                  </div>
-                  <span className="badge badge-info">LÊN LỊCH</span>
-                </div>
-              </>
+              <div style={{ textAlign: 'center', padding: '30px 20px', background: '#f8f9fb', borderRadius: 12 }}>
+                <span style={{ fontSize: 36 }}>✅</span>
+                <h4 style={{ margin: '10px 0 4px', color: 'var(--text-primary)', fontSize: 14 }}>Không có sự cố</h4>
+                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: 13 }}>Hệ thống đang hoạt động ổn định.</p>
+              </div>
             )}
           </div>
         </div>
@@ -691,38 +657,11 @@ function AdminDashboard() {
                 </div>
               );
             }) : (
-              <>
-                <div className="resident-item">
-                  <div className="resident-item-left">
-                    <div className="avatar-initials avatar-blue">TT</div>
-                    <div className="resident-item-info">
-                      <h4>Trần Thị Thu Thảo</h4>
-                      <span>Căn hộ A-1502</span>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Đã xác minh</span>
-                </div>
-                <div className="resident-item">
-                  <div className="resident-item-left">
-                    <div className="avatar-initials avatar-purple">LH</div>
-                    <div className="resident-item-info">
-                      <h4>Lê Hoàng Nam</h4>
-                      <span>Căn hộ B-0410</span>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 12, color: 'var(--warning)' }}>Chờ duyệt</span>
-                </div>
-                <div className="resident-item">
-                  <div className="resident-item-left">
-                    <div className="avatar-initials avatar-teal">PM</div>
-                    <div className="resident-item-info">
-                      <h4>Phạm Minh Anh</h4>
-                      <span>Căn hộ A-2201</span>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Đã xác minh</span>
-                </div>
-              </>
+              <div style={{ textAlign: 'center', padding: '30px 20px', background: '#f8f9fb', borderRadius: 12 }}>
+                <span style={{ fontSize: 36 }}>👥</span>
+                <h4 style={{ margin: '10px 0 4px', color: 'var(--text-primary)', fontSize: 14 }}>Chưa có cư dân</h4>
+                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: 13 }}>Hãy thêm cư dân mới vào hệ thống.</p>
+              </div>
             )}
           </div>
         </div>

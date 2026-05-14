@@ -13,16 +13,23 @@ export default function ToaNhaPage() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 4;
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
   const [form] = Form.useForm();
 
-  useEffect(() => { fetchData(); fetchPhong(); }, []);
+  useEffect(() => { fetchData(); fetchPhong(); }, [currentPage]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await buildingService.getAll();
-      setData(res.data?.data || []);
+      const res = await buildingService.getAll({ page: currentPage, limit: pageSize });
+      if (res.data?.pagination) {
+        setData(res.data.data || []);
+        setTotalItems(res.data.pagination.total);
+      } else {
+        setData(res.data?.data || []);
+        setTotalItems((res.data?.data || []).length);
+      }
     } catch { message.error('Lỗi tải danh sách tòa nhà'); }
     finally { setLoading(false); }
   };
@@ -91,8 +98,8 @@ export default function ToaNhaPage() {
     !searchText || item.building_name?.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const paginatedData = filteredData;
 
   const totalRooms = phongList.length;
   const occupiedRooms = phongList.filter(p => p.status === 'Đang sử dụng').length;
@@ -184,7 +191,7 @@ export default function ToaNhaPage() {
         {filteredData.length > 0 && (
           <div className="pagination">
             <div className="pagination-info">
-              Hiển thị {Math.min((currentPage - 1) * pageSize + 1, filteredData.length)} - {Math.min(currentPage * pageSize, filteredData.length)} trong số {filteredData.length} tòa nhà
+              Hiển thị {Math.min((currentPage - 1) * pageSize + 1, totalItems)} - {Math.min(currentPage * pageSize, totalItems)} trong số {totalItems} tòa nhà
             </div>
             <div className="pagination-buttons">
               <button className="pagination-btn" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>‹</button>

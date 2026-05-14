@@ -1,12 +1,23 @@
 const HoaDonModel = require('../models/invoiceModel');
 const ChiSoDichVuModel = require('../models/serviceReadingModel');
 const response = require('../utils/responseFormat');
+const { parsePagination, isPaginated } = require('../utils/pagination');
 
 const generateId = () => 'HD' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
 
 const HoaDonController = {
     getAll: async (req, res) => {
         try {
+            if (isPaginated(req.query)) {
+                const { page, limit, offset } = parsePagination(req.query);
+                const search = req.query.search || '';
+                const status = req.query.status || '';
+                const [data, total] = await Promise.all([
+                    HoaDonModel.getAllPaginated(limit, offset, search, status),
+                    HoaDonModel.count(search, status)
+                ]);
+                return response.paginate(res, data, page, limit, total, 'Lấy danh sách hóa đơn thành công');
+            }
             const data = await HoaDonModel.getAll();
             return response.success(res, data, 'Lấy danh sách hóa đơn thành công');
         } catch (error) {

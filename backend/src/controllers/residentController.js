@@ -1,11 +1,21 @@
 const ResidentModel = require('../models/residentModel');
 const response = require('../utils/responseFormat');
+const { parsePagination, isPaginated } = require('../utils/pagination');
 
 const generateId = () => 'CD' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
 
 const ThongTinCuDanController = {
     getAll: async (req, res) => {
         try {
+            if (isPaginated(req.query)) {
+                const { page, limit, offset } = parsePagination(req.query);
+                const search = req.query.search || '';
+                const [data, total] = await Promise.all([
+                    ResidentModel.getAllPaginated(limit, offset, search),
+                    ResidentModel.count(search)
+                ]);
+                return response.paginate(res, data, page, limit, total, 'Lấy danh sách cư dân thành công');
+            }
             const data = await ResidentModel.getAll();
             return response.success(res, data, 'Lấy danh sách cư dân thành công');
         } catch (error) {

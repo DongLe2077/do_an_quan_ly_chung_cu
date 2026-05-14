@@ -154,7 +154,7 @@ export default function LoginPage() {
                 <Link style={{ fontSize: 13, color: '#4a90d9', fontWeight: 600 }}>Quên mật khẩu?</Link>
               </div>
 
-              <Form.Item>
+              <Form.Item style={{ marginBottom: 16 }}>
                 <Button 
                   type="primary" 
                   htmlType="submit" 
@@ -175,6 +175,10 @@ export default function LoginPage() {
                   Đăng nhập
                 </Button>
               </Form.Item>
+              
+              <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
+                Bạn chưa có tài khoản? <span onClick={() => router.push('/register')} style={{ cursor: 'pointer', color: '#4a90d9', fontWeight: 600 }}>Đăng ký</span>
+              </div>
             </Form>
           </div>
 

@@ -15,15 +15,24 @@ export default function DichVuPage() {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
   const [form] = Form.useForm();
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [currentPage]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await serviceService.getAll();
-      setData(res.data?.data || []);
+      const res = await serviceService.getAll({ page: currentPage, limit: pageSize });
+      if (res.data?.pagination) {
+        setData(res.data.data || []);
+        setTotalItems(res.data.pagination.total);
+      } else {
+        setData(res.data?.data || []);
+        setTotalItems((res.data?.data || []).length);
+      }
     } catch { message.error('Lỗi tải danh sách dịch vụ'); }
     finally { setLoading(false); }
   };
@@ -88,7 +97,15 @@ export default function DichVuPage() {
 
       <div className="table-wrapper">
         <Table columns={columns} dataSource={data} rowKey="service_id" loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Tổng ${t} dịch vụ` }} />
+          pagination={{ 
+            current: currentPage,
+            pageSize: pageSize,
+            total: totalItems,
+            showSizeChanger: false, 
+            showTotal: (t) => `Tổng ${t} dịch vụ` 
+          }}
+          onChange={(pagination) => setCurrentPage(pagination.current)}
+        />
       </div>
 
       <Modal title={editingRecord ? 'Sửa dịch vụ' : 'Thêm dịch vụ mới'} open={modalOpen}

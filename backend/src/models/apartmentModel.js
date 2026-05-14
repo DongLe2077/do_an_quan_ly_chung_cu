@@ -16,6 +16,53 @@ const PhongModel = {
         return rows;
     },
 
+    getAllPaginated: async (limit, offset, search = '', buildingId = '') => {
+        let query = `
+            SELECT p.apartment_id, p.apartment_number, p.building_id, p.area, t.building_name,
+                   CASE 
+                       WHEN p.status = 'Bảo trì' THEN 'Bảo trì'
+                       WHEN (SELECT COUNT(*) FROM residents c WHERE c.apartment_id = p.apartment_id) > 0 THEN 'Đang sử dụng'
+                       ELSE 'Trống'
+                   END AS status
+            FROM apartments p 
+            LEFT JOIN buildings t ON p.building_id = t.building_id
+            WHERE 1=1
+        `;
+        let queryParams = [];
+
+        if (search) {
+            query += ` AND p.apartment_number LIKE ?`;
+            queryParams.push(`%${search}%`);
+        }
+        if (buildingId) {
+            query += ` AND p.building_id = ?`;
+            queryParams.push(buildingId);
+        }
+
+        query += ` ORDER BY p.apartment_number ASC LIMIT ? OFFSET ?`;
+        queryParams.push(limit, offset);
+
+        const [rows] = await db.query(query, queryParams);
+        return rows;
+    },
+
+    count: async (search = '', buildingId = '') => {
+        let query = 'SELECT COUNT(*) as total FROM apartments p WHERE 1=1';
+        let queryParams = [];
+
+        if (search) {
+            query += ` AND p.apartment_number LIKE ?`;
+            queryParams.push(`%${search}%`);
+        }
+        if (buildingId) {
+            query += ` AND p.building_id = ?`;
+            queryParams.push(buildingId);
+        }
+
+        const [rows] = await db.query(query, queryParams);
+        return rows[0].total;
+    },
+
     // Lấy phòng theo apartment_id
     getById: async (apartmentId) => {
         const [rows] = await db.query(`

@@ -18,8 +18,11 @@ export default function HoaDonPage() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [filterTrangThai, setFilterTrangThai] = useState('');
   const [filterMonth, setFilterMonth] = useState('');
+  const [searchText, setSearchText] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
   const [form] = Form.useForm();
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
@@ -39,13 +42,21 @@ export default function HoaDonPage() {
         fetchResidentData();
       }
     }
-  }, [user]);
+  }, [user, currentPage, searchText, filterTrangThai]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await invoiceService.getAll();
-      setData(res.data?.data || []);
+      const res = await invoiceService.getAll({ 
+        page: currentPage, limit: pageSize, search: searchText, status: filterTrangThai 
+      });
+      if (res.data?.pagination) {
+        setData(res.data.data || []);
+        setTotalItems(res.data.pagination.total);
+      } else {
+        setData(res.data?.data || []);
+        setTotalItems((res.data?.data || []).length);
+      }
     } catch { message.error('Lỗi tải danh sách hóa đơn'); }
     finally { setLoading(false); }
   };
@@ -142,11 +153,10 @@ export default function HoaDonPage() {
   };
 
   let filteredData = data;
-  if (filterTrangThai) filteredData = filteredData.filter(h => h.status === filterTrangThai);
   if (filterMonth) filteredData = filteredData.filter(h => h.billing_month?.includes(filterMonth));
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const paginatedData = filteredData;
 
   const totalPaid = data.filter(h => h.status === 'Đã thanh toán').length;
   const totalPending = data.filter(h => h.status === 'Chờ xác nhận').length;
@@ -176,6 +186,25 @@ export default function HoaDonPage() {
 
       {/* FILTER BAR */}
       <div className="filter-bar">
+        {isAdmin && (
+          <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 300 }}>
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Tìm theo phòng..."
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  setSearchText(searchInput);
+                  setCurrentPage(1);
+                }
+              }}
+              style={{ paddingLeft: 36, width: '100%', border: 'none', background: 'transparent' }}
+            />
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', border: '1px solid var(--border-color)', borderRadius: 8, background: '#fff', fontSize: 13 }}>
           <span>📅</span>
           <select

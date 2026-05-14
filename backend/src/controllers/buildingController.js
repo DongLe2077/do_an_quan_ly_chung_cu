@@ -1,11 +1,20 @@
 const ToaNhaModel = require('../models/buildingModel');
 const response = require('../utils/responseFormat');
+const { parsePagination, isPaginated } = require('../utils/pagination');
 
 const generateId = () => 'TN' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
 
 const ToaNhaController = {
     getAll: async (req, res) => {
         try {
+            if (isPaginated(req.query)) {
+                const { page, limit, offset } = parsePagination(req.query);
+                const [data, total] = await Promise.all([
+                    ToaNhaModel.getAllPaginated(limit, offset),
+                    ToaNhaModel.count()
+                ]);
+                return response.paginate(res, data, page, limit, total, 'Lấy danh sách tòa nhà thành công');
+            }
             const data = await ToaNhaModel.getAll();
             return response.success(res, data, 'Lấy danh sách tòa nhà thành công');
         } catch (error) {

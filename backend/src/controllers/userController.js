@@ -2,6 +2,8 @@ const NguoiDungModel = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const response = require('../utils/responseFormat');
+const ResidentModel = require('../models/residentModel');
+const { parsePagination, isPaginated } = require('../utils/pagination');
 
 const generateId = () => 'ND' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
 
@@ -47,25 +49,41 @@ const NguoiDungController = {
     // Đăng ký
     register: async (req, res) => {
         try {
-            const { username, password, email } = req.body;
-            if (!username || !password) {
-                return response.error(res, 'Tên đăng nhập và mật khẩu là bắt buộc', 400);
+            const { username, password, email, full_name, phone } = req.body;
+            const finalUsername = username || email;
+
+            if (!finalUsername || !password) {
+                return response.error(res, 'Tên đăng nhập/Email và mật khẩu là bắt buộc', 400);
             }
 
-            const existing = await NguoiDungModel.getByUsername(username);
-            if (existing) return response.error(res, 'Tên đăng nhập đã tồn tại', 409);
+            const existing = await NguoiDungModel.getByUsername(finalUsername);
+            if (existing) return response.error(res, 'Tên đăng nhập hoặc email đã tồn tại', 409);
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const user_id = generateId();
 
             await NguoiDungModel.create({
                 user_id,
-                username,
+                username: finalUsername,
                 password: hashedPassword,
                 role: 'cudan',
                 status: 'Hoạt động',
-                email: email || null
+                email: email || finalUsername
             });
+
+            // Tạo thông tin cư dân
+            if (full_name || phone) {
+                const resident_id = 'CD' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+                await ResidentModel.create({
+                    resident_id,
+                    full_name: full_name || finalUsername,
+                    phone: phone || null,
+                    id_card: null,
+                    hometown: null,
+                    apartment_id: null,
+                    user_id: user_id
+                });
+            }
 
             const token = jwt.sign(
                 { user_id, role: 'cudan' },
@@ -75,7 +93,7 @@ const NguoiDungController = {
 
             return response.success(res, {
                 token,
-                user: { user_id, username, role: 'cudan', status: 'Hoạt động', email }
+                user: { user_id, username: finalUsername, role: 'cudan', status: 'Hoạt động', email }
             }, 'Đăng ký thành công', 201);
         } catch (error) {
             return response.error(res, error.message);
@@ -85,6 +103,14 @@ const NguoiDungController = {
     // Lấy tất cả người dùng
     getAll: async (req, res) => {
         try {
+            if (isPaginated(req.query)) {
+                const { page, limit, offset } = parsePagination(req.query);
+                const [data, total] = await Promise.all([
+                    NguoiDungModel.getAllPaginated(limit, offset),
+                    NguoiDungModel.count()
+                ]);
+                return response.paginate(res, data, page, limit, total, 'Lấy danh sách người dùng thành công');
+            }
             const data = await NguoiDungModel.getAll();
             return response.success(res, data, 'Lấy danh sách người dùng thành công');
         } catch (error) {

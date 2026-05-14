@@ -1,11 +1,22 @@
 const SuCoModel = require('../models/incidentModel');
 const response = require('../utils/responseFormat');
+const { parsePagination, isPaginated } = require('../utils/pagination');
 
 const generateId = () => 'SC' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
 
 const SuCoController = {
     getAll: async (req, res) => {
         try {
+            if (isPaginated(req.query)) {
+                const { page, limit, offset } = parsePagination(req.query);
+                const search = req.query.search || '';
+                const status = req.query.status || '';
+                const [data, total] = await Promise.all([
+                    SuCoModel.getAllPaginated(limit, offset, search, status),
+                    SuCoModel.count(search, status)
+                ]);
+                return response.paginate(res, data, page, limit, total, 'Lấy danh sách sự cố thành công');
+            }
             const data = await SuCoModel.getAll();
             return response.success(res, data, 'Lấy danh sách sự cố thành công');
         } catch (error) {
