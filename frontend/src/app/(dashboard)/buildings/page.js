@@ -83,15 +83,22 @@ export default function ToaNhaPage() {
   };
 
   // Get room counts per building
-  const getRoomCount = (buildingId) => {
-    return phongList.filter(p => p.building_id === buildingId).length;
+  const getRoomCount = (building) => {
+    if (building?.apartment_count !== undefined && building?.apartment_count !== null) {
+      return Number(building.apartment_count) || 0;
+    }
+    return phongList.filter(p => p.building_id === building.building_id).length;
   };
 
-  const getOccupancy = (buildingId) => {
-    const rooms = phongList.filter(p => p.building_id === buildingId);
-    if (rooms.length === 0) return 0;
+  const getOccupancy = (building) => {
+    const total = getRoomCount(building);
+    if (total === 0) return 0;
+    if (building?.occupied_count !== undefined && building?.occupied_count !== null) {
+      return Math.round((Number(building.occupied_count) / total) * 100);
+    }
+    const rooms = phongList.filter(p => p.building_id === building.building_id);
     const occupied = rooms.filter(p => p.status === 'Đang sử dụng').length;
-    return Math.round((occupied / rooms.length) * 100);
+    return Math.round((occupied / total) * 100);
   };
 
   const filteredData = data.filter(item =>
@@ -136,8 +143,8 @@ export default function ToaNhaPage() {
           </thead>
           <tbody>
             {paginatedData.length > 0 ? paginatedData.map((item, index) => {
-              const roomCount = getRoomCount(item.building_id);
-              const occ = getOccupancy(item.building_id);
+              const roomCount = getRoomCount(item);
+              const occ = getOccupancy(item);
               return (
                 <tr key={item.building_id}>
                   <td>

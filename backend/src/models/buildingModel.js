@@ -3,12 +3,29 @@ const db = require('../config/db.config');
 const ToaNhaModel = {
     // Lấy tất cả tòa nhà
     getAll: async () => {
-        const [rows] = await db.query('SELECT * FROM buildings');
+        const [rows] = await db.query(`
+            SELECT b.*,
+                   COUNT(DISTINCT a.apartment_id) AS apartment_count,
+                   COUNT(DISTINCT CASE WHEN r.resident_id IS NOT NULL THEN a.apartment_id END) AS occupied_count
+            FROM buildings b
+            LEFT JOIN apartments a ON b.building_id = a.building_id
+            LEFT JOIN residents r ON a.apartment_id = r.apartment_id
+            GROUP BY b.building_id
+        `);
         return rows;
     },
 
     getAllPaginated: async (limit, offset) => {
-        const [rows] = await db.query('SELECT * FROM buildings LIMIT ? OFFSET ?', [limit, offset]);
+        const [rows] = await db.query(`
+            SELECT b.*,
+                   COUNT(DISTINCT a.apartment_id) AS apartment_count,
+                   COUNT(DISTINCT CASE WHEN r.resident_id IS NOT NULL THEN a.apartment_id END) AS occupied_count
+            FROM buildings b
+            LEFT JOIN apartments a ON b.building_id = a.building_id
+            LEFT JOIN residents r ON a.apartment_id = r.apartment_id
+            GROUP BY b.building_id
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
         return rows;
     },
 
@@ -19,7 +36,16 @@ const ToaNhaModel = {
 
     // Lấy tòa nhà theo building_id
     getById: async (buildingId) => {
-        const [rows] = await db.query('SELECT * FROM buildings WHERE building_id = ?', [buildingId]);
+        const [rows] = await db.query(`
+            SELECT b.*,
+                   COUNT(DISTINCT a.apartment_id) AS apartment_count,
+                   COUNT(DISTINCT CASE WHEN r.resident_id IS NOT NULL THEN a.apartment_id END) AS occupied_count
+            FROM buildings b
+            LEFT JOIN apartments a ON b.building_id = a.building_id
+            LEFT JOIN residents r ON a.apartment_id = r.apartment_id
+            WHERE b.building_id = ?
+            GROUP BY b.building_id
+        `, [buildingId]);
         return rows[0];
     },
 
