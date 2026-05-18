@@ -211,6 +211,12 @@ const HoaDonController = {
 
     payosWebhook: async (req, res) => {
         try {
+            // Bỏ qua và xác nhận thành công nếu là request kiểm thử liên kết của PayOS
+            if (req.body && (req.body.webhookUrl || req.body.desc === 'confirm' || req.body.desc === 'Confirm')) {
+                console.log('🔄 Nhận yêu cầu xác nhận Webhook từ PayOS:', req.body);
+                return res.json({ success: true, message: 'Webhook registered successfully' });
+            }
+
             const payos = getPayOS();
             const verified = payos.verifyPaymentWebhookData(req.body);
 
