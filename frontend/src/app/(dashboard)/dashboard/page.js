@@ -75,6 +75,14 @@ function ResidentDashboard({ user }) {
   };
 
   const handlePaymentConfirm = async (phuongThuc) => {
+    if (phuongThuc === 'PayOS') {
+      const res = await invoiceService.taoPayOS(selectedInvoiceForPayment.invoice_id);
+      const checkoutUrl = res.data?.data?.checkoutUrl;
+      if (!checkoutUrl) throw new Error('Không lấy được link thanh toán');
+      window.location.href = checkoutUrl;
+      return;
+    }
+
     await invoiceService.thanhToan(selectedInvoiceForPayment.invoice_id, { payment_method: phuongThuc });
     fetchResidentData();
   };

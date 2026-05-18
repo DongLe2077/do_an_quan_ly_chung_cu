@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Modal, Form, Input, InputNumber, Select, message } from 'antd';
 import apartmentService from '@/services/apartmentService';
 import buildingService from '@/services/buildingService';
@@ -23,7 +24,16 @@ export default function PhongPage() {
   const [detailData, setDetailData] = useState(null);
   const [form] = Form.useForm();
 
+  const searchParams = useSearchParams();
+
   useEffect(() => { fetchData(); fetchToaNha(); }, [currentPage, searchText, filterToaNha]);
+
+  useEffect(() => {
+    const query = searchParams.get('search') || '';
+    setSearchInput(query);
+    setSearchText(query);
+    setCurrentPage(1);
+  }, [searchParams]);
 
   const fetchData = async () => {
     setLoading(true);

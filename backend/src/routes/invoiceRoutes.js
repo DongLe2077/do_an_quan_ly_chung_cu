@@ -25,6 +25,9 @@ router.put('/:id', authMiddleware, roleMiddleware(roleMiddleware.ROLES.ADMIN), H
 // PATCH /api/invoices/:id/pay — Cư dân yêu cầu thanh toán
 router.patch('/:id/pay', authMiddleware, roleMiddleware(roleMiddleware.ROLES.CU_DAN), HoaDonController.thanhToan);
 
+// POST /api/invoices/:id/payos — Tạo link thanh toán PayOS
+router.post('/:id/payos', authMiddleware, roleMiddleware(roleMiddleware.ROLES.CU_DAN), HoaDonController.taoPayOS);
+
 // PATCH /api/invoices/:id/confirm — Admin xác nhận thanh toán
 router.patch('/:id/confirm', authMiddleware, roleMiddleware(roleMiddleware.ROLES.ADMIN), HoaDonController.xacNhanThanhToan);
 

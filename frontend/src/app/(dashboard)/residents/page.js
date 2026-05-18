@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Modal, Form, Input, Select, message } from 'antd';
 import residentService from '@/services/residentService';
 import apartmentService from '@/services/apartmentService';
@@ -24,7 +25,16 @@ export default function CuDanPage() {
   // Thêm một state để giữ text search khi đang gõ
   const [searchInput, setSearchInput] = useState('');
 
+  const searchParams = useSearchParams();
+
   useEffect(() => { fetchData(); fetchPhong(); fetchNguoiDung(); }, [currentPage, searchText]);
+
+  useEffect(() => {
+    const query = searchParams.get('search') || '';
+    setSearchInput(query);
+    setSearchText(query);
+    setCurrentPage(1);
+  }, [searchParams]);
 
   const fetchData = async () => {
     setLoading(true);

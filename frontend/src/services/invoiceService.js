@@ -8,6 +8,7 @@ const invoiceService = {
   create: (data) => api.post('/invoices', data),
   update: (id, data) => api.put(`/invoices/${id}`, data),
   thanhToan: (id, data) => api.patch(`/invoices/${id}/pay`, data),
+  taoPayOS: (id) => api.post(`/invoices/${id}/payos`),
   xacNhanThanhToan: (id) => api.patch(`/invoices/${id}/confirm`),
   tuChoiThanhToan: (id) => api.patch(`/invoices/${id}/reject`),
   tinhTienTuDong: (id) => api.put(`/invoices/${id}/calculate`),

@@ -114,6 +114,32 @@ const HoaDonModel = {
         return result.affectedRows;
     },
 
+    setPaymentOrder: async (invoiceId, data) => {
+        const { orderCode, provider, method } = data;
+        const [result] = await db.query(
+            'UPDATE invoices SET payment_order_code = ?, payment_provider = ?, payment_method = ? WHERE invoice_id = ?',
+            [orderCode, provider || null, method || null, invoiceId]
+        );
+        return result.affectedRows;
+    },
+
+    getByPaymentOrderCode: async (orderCode) => {
+        const [rows] = await db.query(
+            'SELECT * FROM invoices WHERE payment_order_code = ? LIMIT 1',
+            [orderCode]
+        );
+        return rows[0];
+    },
+
+    markPaidByOrderCode: async (orderCode, data) => {
+        const { paidAt, paymentRef, provider, method } = data;
+        const [result] = await db.query(
+            'UPDATE invoices SET status = ?, paid_at = ?, payment_ref = ?, payment_provider = ?, payment_method = ? WHERE payment_order_code = ?',
+            ['Đã thanh toán', paidAt || new Date(), paymentRef || null, provider || null, method || null, orderCode]
+        );
+        return result.affectedRows;
+    },
+
     delete: async (invoiceId) => {
         const [result] = await db.query('DELETE FROM invoices WHERE invoice_id = ?', [invoiceId]);
         return result.affectedRows;

@@ -30,6 +30,14 @@ const PAYMENT_METHODS = [
     desc: 'Thanh toán qua cổng VNPay',
   },
   {
+    key: 'PayOS',
+    name: 'PayOS',
+    icon: '⚡',
+    color: '#111827',
+    bg: '#f3f4f6',
+    desc: 'Thanh toán tự động xác nhận',
+  },
+  {
     key: 'ChuyenKhoan',
     name: 'Chuyển khoản',
     icon: '🏦',
@@ -44,6 +52,7 @@ export default function PaymentModal({ open, onClose, invoice, onConfirm, loadin
   const [step, setStep] = useState(1); // 1: chọn PT, 2: xác nhận, 3: thành công
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const isPayOS = selectedMethod === 'PayOS';
 
   const formatCurrency = (val) => `${Number(val || 0).toLocaleString('vi-VN')} đ`;
 
@@ -51,8 +60,10 @@ export default function PaymentModal({ open, onClose, invoice, onConfirm, loadin
     setProcessing(true);
     try {
       await onConfirm(selectedMethod);
-      message.success('Gửi xác nhận thanh toán thành công! Vui lòng chờ Ban quản lý duyệt.');
-      setStep(3);
+      if (!isPayOS) {
+        message.success('Gửi xác nhận thanh toán thành công! Vui lòng chờ Ban quản lý duyệt.');
+        setStep(3);
+      }
     } catch (error) {
       message.error('Thanh toán thất bại. Vui lòng thử lại.');
     } finally {
@@ -212,79 +223,94 @@ export default function PaymentModal({ open, onClose, invoice, onConfirm, loadin
                 );
               })()}
 
-              {/* QR Code */}
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{
-                  display: 'inline-block', padding: 12,
-                  background: 'white', borderRadius: 16,
-                  border: '2px solid #e8e8e8',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-                }}>
-                  <img
-                    src={qrUrl}
-                    alt="QR Thanh toán"
-                    style={{ width: 200, height: 200, borderRadius: 8 }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
+              {!isPayOS && (
+                <>
+                  {/* QR Code */}
+                  <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                    <div style={{
+                      display: 'inline-block', padding: 12,
+                      background: 'white', borderRadius: 16,
+                      border: '2px solid #e8e8e8',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                    }}>
+                      <img
+                        src={qrUrl}
+                        alt="QR Thanh toán"
+                        style={{ width: 200, height: 200, borderRadius: 8 }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div style={{
+                        display: 'none', width: 200, height: 200,
+                        alignItems: 'center', justifyContent: 'center',
+                        background: '#f5f5f5', borderRadius: 8,
+                        flexDirection: 'column', gap: 8,
+                      }}>
+                        <span style={{ fontSize: 40 }}>📱</span>
+                        <span style={{ fontSize: 12, color: '#888' }}>Quét mã QR để thanh toán</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#888', marginTop: 10 }}>
+                      Quét mã QR bằng ứng dụng {selectedMethod === 'MoMo' ? 'MoMo' : selectedMethod === 'VNPay' ? 'VNPay' : 'ngân hàng'}
+                    </div>
+                  </div>
+
+                  {/* Thông tin chuyển khoản (hiển thị cho tất cả phương thức) */}
                   <div style={{
-                    display: 'none', width: 200, height: 200,
-                    alignItems: 'center', justifyContent: 'center',
-                    background: '#f5f5f5', borderRadius: 8,
-                    flexDirection: 'column', gap: 8,
+                    background: '#f8f9fb', borderRadius: 12, padding: 16,
+                    marginBottom: 20, border: '1px solid #e8e8e8',
                   }}>
-                    <span style={{ fontSize: 40 }}>📱</span>
-                    <span style={{ fontSize: 12, color: '#888' }}>Quét mã QR để thanh toán</span>
+                    <h4 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#1a2332', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      🏦 Thông tin chuyển khoản
+                    </h4>
+                    {[
+                      ['Ngân hàng', BANK_INFO.bankName],
+                      ['Số tài khoản', BANK_INFO.accountNumber],
+                      ['Chủ tài khoản', BANK_INFO.accountHolder],
+                      ['Nội dung CK', noiDungCK],
+                      ['Số tiền', formatCurrency(soTien)],
+                    ].map(([label, value], i) => (
+                      <div key={i} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '8px 0',
+                        borderBottom: i < 4 ? '1px solid #eee' : 'none',
+                      }}>
+                        <span style={{ fontSize: 13, color: '#888' }}>{label}</span>
+                        <span style={{
+                          fontSize: 13, fontWeight: 600, color: '#1a2332',
+                          fontFamily: i === 1 ? 'monospace' : 'inherit',
+                        }}>{value}</span>
+                      </div>
+                    ))}
                   </div>
-                </div>
-                <div style={{ fontSize: 12, color: '#888', marginTop: 10 }}>
-                  Quét mã QR bằng ứng dụng {selectedMethod === 'MoMo' ? 'MoMo' : selectedMethod === 'VNPay' ? 'VNPay' : 'ngân hàng'}
-                </div>
-              </div>
 
-              {/* Thông tin chuyển khoản (hiển thị cho tất cả phương thức) */}
-              <div style={{
-                background: '#f8f9fb', borderRadius: 12, padding: 16,
-                marginBottom: 20, border: '1px solid #e8e8e8',
-              }}>
-                <h4 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#1a2332', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  🏦 Thông tin chuyển khoản
-                </h4>
-                {[
-                  ['Ngân hàng', BANK_INFO.bankName],
-                  ['Số tài khoản', BANK_INFO.accountNumber],
-                  ['Chủ tài khoản', BANK_INFO.accountHolder],
-                  ['Nội dung CK', noiDungCK],
-                  ['Số tiền', formatCurrency(soTien)],
-                ].map(([label, value], i) => (
-                  <div key={i} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '8px 0',
-                    borderBottom: i < 4 ? '1px solid #eee' : 'none',
+                  {/* Lưu ý */}
+                  <div style={{
+                    background: '#fff8e1', borderRadius: 10, padding: '10px 14px',
+                    display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 20,
+                    border: '1px solid #ffe082',
                   }}>
-                    <span style={{ fontSize: 13, color: '#888' }}>{label}</span>
-                    <span style={{
-                      fontSize: 13, fontWeight: 600, color: '#1a2332',
-                      fontFamily: i === 1 ? 'monospace' : 'inherit',
-                    }}>{value}</span>
+                    <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+                    <span style={{ fontSize: 12, color: '#856404', lineHeight: 1.5 }}>
+                      Sau khi chuyển khoản thành công, bấm <strong>"Xác nhận đã thanh toán"</strong> bên dưới.
+                      Ban quản lý sẽ kiểm tra và xác nhận giao dịch trong vòng 24h.
+                    </span>
                   </div>
-                ))}
-              </div>
+                </>
+              )}
 
-              {/* Lưu ý */}
-              <div style={{
-                background: '#fff8e1', borderRadius: 10, padding: '10px 14px',
-                display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 20,
-                border: '1px solid #ffe082',
-              }}>
-                <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
-                <span style={{ fontSize: 12, color: '#856404', lineHeight: 1.5 }}>
-                  Sau khi chuyển khoản thành công, bấm <strong>"Xác nhận đã thanh toán"</strong> bên dưới.
-                  Ban quản lý sẽ kiểm tra và xác nhận giao dịch trong vòng 24h.
-                </span>
-              </div>
+              {isPayOS && (
+                <div style={{
+                  background: '#f0f9ff', borderRadius: 12, padding: 16,
+                  marginBottom: 20, border: '1px solid #bae6fd',
+                  color: '#0c4a6e', fontSize: 13, lineHeight: 1.6
+                }}>
+                  Bạn sẽ được chuyển đến cổng thanh toán PayOS.
+                  Sau khi thanh toán thành công, hệ thống sẽ tự động cập nhật trạng thái hóa đơn.
+                </div>
+              )}
 
               {/* Buttons */}
               <div style={{ display: 'flex', gap: 12 }}>
@@ -307,7 +333,7 @@ export default function PaymentModal({ open, onClose, invoice, onConfirm, loadin
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  {processing ? '⏳ Đang xử lý...' : '✓ Xác nhận đã thanh toán'}
+                  {processing ? '⏳ Đang xử lý...' : (isPayOS ? 'Thanh toán với PayOS' : '✓ Xác nhận đã thanh toán')}
                 </button>
               </div>
             </>

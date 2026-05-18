@@ -1,10 +1,27 @@
 const HoaDonModel = require('../models/invoiceModel');
 const ChiSoDichVuModel = require('../models/serviceReadingModel');
 const ResidentModel = require('../models/residentModel');
+const PayOS = require('@payos/node');
 const response = require('../utils/responseFormat');
 const { parsePagination, isPaginated } = require('../utils/pagination');
 
 const generateId = () => 'HD' + Date.now().toString().slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+const generateOrderCode = () => {
+    const base = Date.now().toString().slice(-10);
+    const suffix = Math.floor(10 + Math.random() * 90).toString();
+    return Number(`${base}${suffix}`);
+};
+
+const getPayOS = () => {
+    const PAYOS_CLIENT_ID = process.env.PAYOS_CLIENT_ID || 'f9787f9a-e5d7-4042-9632-20e454fe38c5';
+    const PAYOS_API_KEY = process.env.PAYOS_API_KEY || '0a596df3-4f9c-471f-b1a6-5be1a898c940';
+    const PAYOS_CHECKSUM_KEY = process.env.PAYOS_CHECKSUM_KEY || '55d5baf838f2182827f5e6e5eec6acb7371f7d9751fc7516125bdfa0f81a5b96';
+
+    if (!PAYOS_CLIENT_ID || !PAYOS_API_KEY || !PAYOS_CHECKSUM_KEY) {
+        throw new Error('Thiếu cấu hình PayOS');
+    }
+    return new PayOS(PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY);
+};
 
 const HoaDonController = {
     getAll: async (req, res) => {
@@ -127,6 +144,108 @@ const HoaDonController = {
             }, 'Yêu cầu thanh toán đã được gửi. Vui lòng chờ xác nhận.');
         } catch (error) {
             return response.error(res, error.message);
+        }
+    },
+
+    taoPayOS: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const user = req.user;
+
+            if (!user || user.role !== 'cudan') {
+                return response.error(res, 'Chỉ cư dân được phép thanh toán', 403);
+            }
+
+            const resident = await ResidentModel.getByUser(user.user_id);
+            if (!resident || !resident.apartment_id) {
+                return response.error(res, 'Tài khoản cư dân chưa liên kết căn hộ', 403);
+            }
+
+            const existing = await HoaDonModel.getById(id);
+            if (!existing) return response.error(res, 'Không tìm thấy hóa đơn', 404);
+            if (existing.apartment_id !== resident.apartment_id) {
+                return response.error(res, 'Bạn không có quyền thanh toán hóa đơn này', 403);
+            }
+            if (existing.status === 'Đã thanh toán') {
+                return response.error(res, 'Hóa đơn đã được thanh toán', 400);
+            }
+
+            const amount = Math.round(Number(existing.total_amount || 0));
+            if (amount <= 0) {
+                return response.error(res, 'Hóa đơn không hợp lệ để thanh toán', 400);
+            }
+
+            const payos = getPayOS();
+            const orderCode = generateOrderCode();
+
+            // Tự động nhận diện domain của Frontend (localhost hoặc Vercel)
+            const origin = req.headers.origin || req.headers.referer || 'http://localhost:3000';
+            const baseOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+            const returnUrl = process.env.PAYOS_RETURN_URL || `${baseOrigin}/invoices`;
+            const cancelUrl = process.env.PAYOS_CANCEL_URL || `${baseOrigin}/invoices`;
+
+            const paymentLink = await payos.createPaymentLink({
+                orderCode,
+                amount,
+                description: `Thanh toan ${existing.invoice_id}`,
+                returnUrl,
+                cancelUrl
+            });
+
+            await HoaDonModel.setPaymentOrder(id, {
+                orderCode,
+                provider: 'PayOS',
+                method: 'PayOS'
+            });
+
+            return response.success(res, {
+                checkoutUrl: paymentLink.checkoutUrl,
+                paymentLinkId: paymentLink.paymentLinkId,
+                orderCode
+            }, 'Tạo link thanh toán PayOS thành công');
+        } catch (error) {
+            return response.error(res, error.message);
+        }
+    },
+
+    payosWebhook: async (req, res) => {
+        try {
+            const payos = getPayOS();
+            const verified = payos.verifyPaymentWebhookData(req.body);
+
+            const payload = verified?.data || verified;
+            const code = verified?.code || req.body?.code;
+
+            if (code && code !== '00') {
+                return res.json({ success: true });
+            }
+
+            const orderCode = payload?.orderCode || payload?.order_code;
+            if (!orderCode) return res.json({ success: true });
+
+            const invoice = await HoaDonModel.getByPaymentOrderCode(orderCode);
+            if (!invoice) return res.json({ success: true });
+
+            if (invoice.status === 'Đã thanh toán') {
+                return res.json({ success: true });
+            }
+
+            const amount = Number(payload?.amount || 0);
+            if (amount && Number(invoice.total_amount) !== amount) {
+                return res.status(400).json({ success: false, message: 'Sai số tiền thanh toán' });
+            }
+
+            await HoaDonModel.markPaidByOrderCode(orderCode, {
+                paidAt: payload?.transactionDateTime ? new Date(payload.transactionDateTime) : new Date(),
+                paymentRef: payload?.reference || payload?.paymentLinkId || null,
+                provider: 'PayOS',
+                method: 'PayOS'
+            });
+
+            return res.json({ success: true });
+        } catch (error) {
+            return res.status(400).json({ success: false, message: 'Webhook PayOS không hợp lệ' });
         }
     },
 

@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
+import buildingService from '@/services/buildingService';
+import apartmentService from '@/services/apartmentService';
+import residentService from '@/services/residentService';
 
 const adminMenuItems = [
   { key: '/dashboard', icon: '📊', label: 'Tổng quan' },
@@ -27,6 +30,15 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const { user, logout, initialize, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState({ buildings: [], apartments: [], residents: [] });
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const searchRef = useRef(null);
+  const userName = user?.username || 'User';
+  const isAdmin = user?.role === 'admin';
+  const userRole = isAdmin ? 'Property Manager' : user?.role === 'cudan' ? 'Cư dân' : 'Người dùng';
+  const initials = userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
   useEffect(() => {
     initialize();
@@ -42,17 +54,83 @@ export default function DashboardLayout({ children }) {
     }
   }, [isAuthenticated, mounted]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setSearchResults({ buildings: [], apartments: [], residents: [] });
+      setShowSearch(false);
+      return;
+    }
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const [apartmentsRes, residentsRes, buildingsRes] = await Promise.all([
+          apartmentService.getAll({ page: 1, limit: 5, search: query }),
+          residentService.getAll({ page: 1, limit: 5, search: query }),
+          buildingService.getAll()
+        ]);
+
+        if (!active) return;
+
+        const lower = query.toLowerCase();
+        const buildings = (buildingsRes.data?.data || [])
+          .filter((b) =>
+            b.building_name?.toLowerCase().includes(lower) ||
+            b.building_id?.toLowerCase().includes(lower)
+          )
+          .slice(0, 5);
+
+        setSearchResults({
+          buildings,
+          apartments: apartmentsRes.data?.data || [],
+          residents: residentsRes.data?.data || []
+        });
+        setShowSearch(true);
+      } catch {
+        if (active) {
+          setSearchResults({ buildings: [], apartments: [], residents: [] });
+        }
+      } finally {
+        if (active) setSearchLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, isAdmin]);
+
+  useEffect(() => {
+    if (!showSearch) return;
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearch(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSearch]);
+
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
 
-  const userName = user?.username || 'User';
-  const isAdmin = user?.role === 'admin';
-  const userRole = isAdmin ? 'Property Manager' : user?.role === 'cudan' ? 'Cư dân' : 'Người dùng';
-  const initials = userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-
   const menuItems = isAdmin ? adminMenuItems : residentMenuItems;
+  const hasResults =
+    searchResults.buildings.length ||
+    searchResults.apartments.length ||
+    searchResults.residents.length;
+
+  const navigateWithSearch = (path, value) => {
+    setShowSearch(false);
+    router.push(`${path}?search=${encodeURIComponent(value)}`);
+  };
 
   return (
     <>
@@ -188,7 +266,7 @@ export default function DashboardLayout({ children }) {
       <div className="main-layout">
         {/* TOP BAR */}
         <header className="top-bar">
-          <div className="top-bar-search">
+          <div className="top-bar-search" ref={searchRef} style={{ position: 'relative' }}>
             {!isAdmin ? (
                <div style={{ padding: '8px 0', fontSize: 16, fontWeight: 600, color: 'var(--primary)' }}>
                  Hệ thống cư dân thông minh
@@ -196,7 +274,117 @@ export default function DashboardLayout({ children }) {
             ) : (
               <>
                 <span className="search-icon">🔍</span>
-                <input type="text" placeholder="Tìm kiếm cư dân, tòa nhà..." />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm cư dân, tòa nhà..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (hasResults) setShowSearch(true);
+                  }}
+                />
+                {showSearch && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 44,
+                    left: 0,
+                    right: 0,
+                    background: '#fff',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 10,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                    zIndex: 2000,
+                    padding: 8
+                  }}>
+                    {searchLoading && (
+                      <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-muted)' }}>
+                        Đang tìm kiếm...
+                      </div>
+                    )}
+
+                    {!searchLoading && !hasResults && (
+                      <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-muted)' }}>
+                        Không tìm thấy kết quả
+                      </div>
+                    )}
+
+                    {!searchLoading && hasResults && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {searchResults.buildings.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', padding: '0 8px 6px' }}>
+                              TÒA NHÀ
+                            </div>
+                            {searchResults.buildings.map((b) => (
+                              <div
+                                key={b.building_id}
+                                onClick={() => navigateWithSearch('/buildings', b.building_name || b.building_id)}
+                                style={{
+                                  padding: '8px 10px',
+                                  borderRadius: 8,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  justifyContent: 'space-between'
+                                }}
+                              >
+                                <span style={{ fontSize: 13 }}>{b.building_name}</span>
+                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.building_id}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {searchResults.apartments.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', padding: '0 8px 6px' }}>
+                              CĂN HỘ
+                            </div>
+                            {searchResults.apartments.map((a) => (
+                              <div
+                                key={a.apartment_id}
+                                onClick={() => navigateWithSearch('/apartments', a.apartment_number || a.apartment_id)}
+                                style={{
+                                  padding: '8px 10px',
+                                  borderRadius: 8,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  justifyContent: 'space-between'
+                                }}
+                              >
+                                <span style={{ fontSize: 13 }}>{a.apartment_number}</span>
+                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{a.building_name || a.building_id}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {searchResults.residents.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', padding: '0 8px 6px' }}>
+                              CƯ DÂN
+                            </div>
+                            {searchResults.residents.map((r) => (
+                              <div
+                                key={r.resident_id}
+                                onClick={() => navigateWithSearch('/residents', r.full_name || r.resident_id)}
+                                style={{
+                                  padding: '8px 10px',
+                                  borderRadius: 8,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  justifyContent: 'space-between'
+                                }}
+                              >
+                                <span style={{ fontSize: 13 }}>{r.full_name}</span>
+                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.apartment_number || 'Chưa liên kết'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Modal, Form, Input, InputNumber, message } from 'antd';
 import buildingService from '@/services/buildingService';
 import apartmentService from '@/services/apartmentService';
@@ -17,7 +18,15 @@ export default function ToaNhaPage() {
   const pageSize = 10;
   const [form] = Form.useForm();
 
+  const searchParams = useSearchParams();
+
   useEffect(() => { fetchData(); fetchPhong(); }, [currentPage]);
+
+  useEffect(() => {
+    const query = searchParams.get('search') || '';
+    setSearchText(query);
+    setCurrentPage(1);
+  }, [searchParams]);
 
   const fetchData = async () => {
     setLoading(true);

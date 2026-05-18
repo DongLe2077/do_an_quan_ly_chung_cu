@@ -12,6 +12,7 @@ const buildingRoutes = require('./buildingRoutes');
 const serviceRoutes = require('./serviceRoutes');
 const uploadRoutes = require('./uploadRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
+const payosRoutes = require('./payosRoutes');
 
 // Sử dụng các routes - English API paths
 router.use('/users', userRoutes);
@@ -24,6 +25,7 @@ router.use('/buildings', buildingRoutes);
 router.use('/services', serviceRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/payos', payosRoutes);
 
 // Route kiểm tra API
 router.get('/', (req, res) => {
