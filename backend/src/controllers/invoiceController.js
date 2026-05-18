@@ -251,7 +251,8 @@ const HoaDonController = {
 
             return res.json({ success: true });
         } catch (error) {
-            return res.status(400).json({ success: false, message: 'Webhook PayOS không hợp lệ' });
+            console.error('❌ Lỗi Webhook PayOS:', error);
+            return res.status(400).json({ success: false, message: `Webhook PayOS không hợp lệ: ${error.message || error}` });
         }
     },
 

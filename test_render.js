@@ -1,12 +1,12 @@
 const testWebhook = async () => {
     try {
-        console.log('🔄 Pinging Render webhook endpoint...');
+        console.log('🔄 Pinging Render webhook endpoint with empty body...');
         const response = await fetch('https://quan-ly-chung-cu.onrender.com/api/payos/webhook', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ webhookUrl: 'https://quan-ly-chung-cu.onrender.com/api/payos/webhook' })
+            body: JSON.stringify({})
         });
         
         const text = await response.text();
