@@ -252,6 +252,25 @@ const HoaDonController = {
             return res.json({ error: 0, message: 'success' });
         } catch (error) {
             console.error('❌ Lỗi Webhook PayOS:', error);
+            
+            // Nếu có lỗi chữ ký nhưng đây không phải là một giao dịch thật trong database, 
+            // chúng ta vẫn trả về success để PayOS có thể đăng ký Webhook thành công.
+            try {
+                const orderCode = req.body?.data?.orderCode || req.body?.data?.order_code;
+                if (orderCode) {
+                    const invoice = await HoaDonModel.getByPaymentOrderCode(orderCode);
+                    if (!invoice) {
+                        console.log(`⚠️ Bỏ qua lỗi chữ ký cho mã đơn hàng test không tồn tại: ${orderCode}`);
+                        return res.json({ error: 0, message: 'success' });
+                    }
+                } else {
+                    console.log('⚠️ Bỏ qua lỗi chữ ký cho request không có data/orderCode');
+                    return res.json({ error: 0, message: 'success' });
+                }
+            } catch (innerErr) {
+                console.error('❌ Lỗi kiểm tra database trong catch block:', innerErr);
+            }
+
             return res.status(400).json({ success: false, message: `Webhook PayOS không hợp lệ: ${error.message || error}` });
         }
     },

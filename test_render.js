@@ -1,10 +1,7 @@
-const testWebhook = async () => {
+const inspectKeys = async () => {
     try {
-        console.log('🔄 Pinging Render webhook endpoint with GET request...');
-        const response = await fetch('https://quan-ly-chung-cu.onrender.com/api/payos/webhook', {
-            method: 'GET'
-        });
-        
+        console.log('🔄 Fetching masked environment keys from Render...');
+        const response = await fetch('https://quan-ly-chung-cu.onrender.com/api/payos/inspect-keys');
         const text = await response.text();
         console.log(`📡 HTTP Status Code: ${response.status}`);
         console.log(`📬 Response Body: ${text}`);
@@ -13,4 +10,4 @@ const testWebhook = async () => {
     }
 };
 
-testWebhook();
+inspectKeys();
