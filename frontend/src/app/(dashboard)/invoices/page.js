@@ -83,7 +83,7 @@ export default function HoaDonPage() {
     try {
       const payload = {
         ...values,
-        HanDongTien: values.due_date ? values.due_date.format('YYYY-MM-DD') : undefined,
+        due_date: values.due_date ? values.due_date.format('YYYY-MM-DD') : undefined,
       };
       if (editingRecord) {
         await invoiceService.update(editingRecord.invoice_id, payload);
@@ -103,7 +103,7 @@ export default function HoaDonPage() {
   };
 
   const handlePaymentConfirm = async (phuongThuc) => {
-    await invoiceService.thanhToan(selectedInvoiceForPayment.invoice_id, { PhuongThuc: phuongThuc });
+    await invoiceService.thanhToan(selectedInvoiceForPayment.invoice_id, { payment_method: phuongThuc });
     if (isAdmin) fetchData(); else fetchResidentData();
   };
 
@@ -320,7 +320,7 @@ export default function HoaDonPage() {
                               setEditingRecord(item);
                               form.setFieldsValue({
                                 ...item,
-                                HanDongTien: item.due_date ? dayjs(item.due_date) : undefined,
+                                due_date: item.due_date ? dayjs(item.due_date) : undefined,
                               });
                               setModalOpen(true);
                             }}>✏️</button>

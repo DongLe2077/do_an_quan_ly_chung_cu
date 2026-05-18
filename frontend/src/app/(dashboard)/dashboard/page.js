@@ -75,7 +75,7 @@ function ResidentDashboard({ user }) {
   };
 
   const handlePaymentConfirm = async (phuongThuc) => {
-    await invoiceService.thanhToan(selectedInvoiceForPayment.invoice_id, { PhuongThuc: phuongThuc });
+    await invoiceService.thanhToan(selectedInvoiceForPayment.invoice_id, { payment_method: phuongThuc });
     fetchResidentData();
   };
 

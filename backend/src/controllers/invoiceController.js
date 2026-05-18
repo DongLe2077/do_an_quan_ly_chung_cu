@@ -1,5 +1,6 @@
 const HoaDonModel = require('../models/invoiceModel');
 const ChiSoDichVuModel = require('../models/serviceReadingModel');
+const ResidentModel = require('../models/residentModel');
 const response = require('../utils/responseFormat');
 const { parsePagination, isPaginated } = require('../utils/pagination');
 
@@ -96,17 +97,32 @@ const HoaDonController = {
     thanhToan: async (req, res) => {
         try {
             const { id } = req.params;
-            const { payment_method } = req.body;
+            const { payment_method, PhuongThuc } = req.body;
+            const user = req.user;
+
+            if (!user || user.role !== 'cudan') {
+                return response.error(res, 'Chỉ cư dân được phép thanh toán', 403);
+            }
+
+            const resident = await ResidentModel.getByUser(user.user_id);
+            if (!resident || !resident.apartment_id) {
+                return response.error(res, 'Tài khoản cư dân chưa liên kết căn hộ', 403);
+            }
+
             const existing = await HoaDonModel.getById(id);
             if (!existing) return response.error(res, 'Không tìm thấy hóa đơn', 404);
+            if (existing.apartment_id !== resident.apartment_id) {
+                return response.error(res, 'Bạn không có quyền thanh toán hóa đơn này', 403);
+            }
             if (existing.status !== 'Chưa thanh toán') {
                 return response.error(res, 'Hóa đơn không ở trạng thái chờ thanh toán', 400);
             }
 
-            await HoaDonModel.updateTrangThai(id, 'Chờ xác nhận');
+            const finalMethod = payment_method || PhuongThuc || 'ChuyenKhoan';
+            await HoaDonModel.updateTrangThai(id, 'Chờ xác nhận', finalMethod);
             return response.success(res, {
                 invoice_id: id,
-                payment_method: payment_method || 'ChuyenKhoan',
+                payment_method: finalMethod,
                 timestamp: new Date().toISOString(),
             }, 'Yêu cầu thanh toán đã được gửi. Vui lòng chờ xác nhận.');
         } catch (error) {

@@ -102,7 +102,14 @@ const HoaDonModel = {
         return result.affectedRows;
     },
 
-    updateTrangThai: async (invoiceId, status) => {
+    updateTrangThai: async (invoiceId, status, paymentMethod) => {
+        if (paymentMethod !== undefined) {
+            const [result] = await db.query(
+                'UPDATE invoices SET status = ?, payment_method = ? WHERE invoice_id = ?',
+                [status, paymentMethod, invoiceId]
+            );
+            return result.affectedRows;
+        }
         const [result] = await db.query('UPDATE invoices SET status = ? WHERE invoice_id = ?', [status, invoiceId]);
         return result.affectedRows;
     },

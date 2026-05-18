@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Modal, Form, Input, InputNumber, Select, message } from 'antd';
 import apartmentService from '@/services/apartmentService';
 import buildingService from '@/services/buildingService';
+import residentService from '@/services/residentService';
 
 export default function PhongPage() {
   const [data, setData] = useState([]);
@@ -81,8 +82,13 @@ export default function PhongPage() {
 
   const openDetail = async (apartmentId) => {
     try {
-      const res = await apartmentService.getById(apartmentId);
-      setDetailData(res.data?.data);
+      const [apartmentRes, residentRes] = await Promise.all([
+        apartmentService.getById(apartmentId),
+        residentService.getByApartment(apartmentId)
+      ]);
+      const detail = apartmentRes.data?.data || null;
+      const residents = residentRes.data?.data || [];
+      setDetailData(detail ? { ...detail, residents } : null);
       setDetailModalOpen(true);
     } catch {
       message.error('Lỗi tải chi tiết căn hộ');
@@ -322,15 +328,15 @@ export default function PhongPage() {
             </div>
 
             <div className="detail-section" style={{ marginTop: 24 }}>
-              <h4 style={{ marginBottom: 12, color: 'var(--primary-color)' }}>Danh sách cư dân ({detailData.DanhSachCuDan?.length || 0})</h4>
-              {detailData.DanhSachCuDan?.length > 0 ? (
+              <h4 style={{ marginBottom: 12, color: 'var(--primary-color)' }}>Danh sách cư dân ({detailData.residents?.length || 0})</h4>
+              {detailData.residents?.length > 0 ? (
                 <div style={{ background: '#f8f9fa', borderRadius: 8, padding: 8 }}>
-                  {detailData.DanhSachCuDan.map((resident, idx) => (
+                  {detailData.residents.map((resident, idx) => (
                     <div key={resident.resident_id} style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 
                       padding: '10px 12px',
-                      borderBottom: idx === detailData.DanhSachCuDan.length - 1 ? 'none' : '1px solid #eee'
+                      borderBottom: idx === detailData.residents.length - 1 ? 'none' : '1px solid #eee'
                     }}>
                       <div>
                         <div style={{ fontWeight: 600 }}>{resident.full_name}</div>
