@@ -1,12 +1,12 @@
 const testWebhook = async () => {
     try {
-        console.log('🔄 Pinging Render webhook endpoint with empty body...');
+        console.log('🔄 Pinging Render webhook endpoint with invalid signature...');
         const response = await fetch('https://quan-ly-chung-cu.onrender.com/api/payos/webhook', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({})
+            body: JSON.stringify({ signature: 'invalid_signature_to_trigger_catch_block' })
         });
         
         const text = await response.text();

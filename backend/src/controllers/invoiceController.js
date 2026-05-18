@@ -214,7 +214,7 @@ const HoaDonController = {
             // Bỏ qua và xác nhận thành công nếu là request kiểm thử liên kết của PayOS (không có chữ ký signature)
             if (!req.body || !req.body.signature) {
                 console.log('🔄 Nhận yêu cầu xác nhận/thăm dò Webhook từ PayOS:', req.body);
-                return res.json({ success: true, message: 'Webhook checked/registered successfully' });
+                return res.json({ error: 0, message: 'Webhook checked/registered successfully' });
             }
 
             const payos = getPayOS();
@@ -224,17 +224,17 @@ const HoaDonController = {
             const code = verified?.code || req.body?.code;
 
             if (code && code !== '00') {
-                return res.json({ success: true });
+                return res.json({ error: 0, message: 'success' });
             }
 
             const orderCode = payload?.orderCode || payload?.order_code;
-            if (!orderCode) return res.json({ success: true });
+            if (!orderCode) return res.json({ error: 0, message: 'success' });
 
             const invoice = await HoaDonModel.getByPaymentOrderCode(orderCode);
-            if (!invoice) return res.json({ success: true });
+            if (!invoice) return res.json({ error: 0, message: 'success' });
 
             if (invoice.status === 'Đã thanh toán') {
-                return res.json({ success: true });
+                return res.json({ error: 0, message: 'success' });
             }
 
             const amount = Number(payload?.amount || 0);
@@ -249,7 +249,7 @@ const HoaDonController = {
                 method: 'PayOS'
             });
 
-            return res.json({ success: true });
+            return res.json({ error: 0, message: 'success' });
         } catch (error) {
             console.error('❌ Lỗi Webhook PayOS:', error);
             return res.status(400).json({ success: false, message: `Webhook PayOS không hợp lệ: ${error.message || error}` });
