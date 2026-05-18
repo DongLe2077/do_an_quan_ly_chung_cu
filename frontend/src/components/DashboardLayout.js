@@ -194,28 +194,26 @@ export default function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      {/* BOTTOM NAV FOR MOBILE (RESIDENTS ONLY) */}
-      {!isAdmin && (
-        <nav className="bottom-nav">
-          {residentMenuItems.map(item => (
-            <div
-              key={item.key}
-              className={`bottom-nav-item ${pathname === item.key ? 'active' : ''}`}
-              onClick={() => router.push(item.key)}
-            >
-              <span className="bottom-nav-icon">{item.icon}</span>
-              <span className="bottom-nav-label">{item.label.replace('Trang chủ Cư dân', 'Tổng quan')}</span>
-            </div>
-          ))}
+      {/* BOTTOM NAV FOR MOBILE */}
+      <nav className="bottom-nav">
+        {menuItems.map(item => (
           <div
-            className={`bottom-nav-item ${pathname === '/profile' ? 'active' : ''}`}
-            onClick={() => router.push('/profile')}
+            key={item.key}
+            className={`bottom-nav-item ${pathname === item.key ? 'active' : ''}`}
+            onClick={() => router.push(item.key)}
           >
-            <span className="bottom-nav-icon">👤</span>
-            <span className="bottom-nav-label">Cá nhân</span>
+            <span className="bottom-nav-icon">{item.icon}</span>
+            <span className="bottom-nav-label">{item.label.replace('Trang chủ Cư dân', 'Tổng quan')}</span>
           </div>
-        </nav>
-      )}
+        ))}
+        <div
+          className={`bottom-nav-item ${pathname === '/profile' ? 'active' : ''}`}
+          onClick={() => router.push('/profile')}
+        >
+          <span className="bottom-nav-icon">👤</span>
+          <span className="bottom-nav-label">Cá nhân</span>
+        </div>
+      </nav>
 
       {/* STYLES FOR MOBILE NAV */}
       <style jsx>{`
@@ -229,20 +227,27 @@ export default function DashboardLayout({ children }) {
           background: #fff;
           border-top: 1px solid var(--border-color);
           z-index: 2000;
-          justify-content: space-around;
           align-items: center;
           padding: 0 10px;
           box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+          overflow-x: auto;
+          white-space: nowrap;
+          -webkit-overflow-scrolling: touch;
+        }
+        .bottom-nav::-webkit-scrollbar {
+          display: none;
         }
         .bottom-nav-item {
-          display: flex;
+          display: inline-flex;
           flex-direction: column;
           align-items: center;
+          justify-content: center;
           gap: 4px;
           color: var(--text-muted);
           cursor: pointer;
           transition: all 0.2s;
-          flex: 1;
+          padding: 0 15px;
+          min-width: 75px;
         }
         .bottom-nav-item.active {
           color: var(--accent);
@@ -257,7 +262,7 @@ export default function DashboardLayout({ children }) {
         
         @media (max-width: 768px) {
           .bottom-nav {
-            display: ${!isAdmin ? 'flex' : 'none'};
+            display: flex;
           }
         }
       `}</style>

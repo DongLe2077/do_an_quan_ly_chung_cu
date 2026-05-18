@@ -391,9 +391,6 @@ body {
 /* ===== GREETING BANNER ===== */
 .greeting-banner {
   background: linear-gradient(120deg, #141e2f 0%, #1e3a5a 50%, #1a2332 100%);
-  background-image: url('/dashboard-banner.png'), linear-gradient(120deg, #141e2f 0%, #1e3a5a 50%, #1a2332 100%);
-  background-size: cover;
-  background-position: center;
   border-radius: 20px;
   padding: 32px 36px;
   margin-bottom: 24px;
@@ -409,11 +406,12 @@ body {
   inset: 0;
   background: linear-gradient(120deg, rgba(20,30,47,0.88) 0%, rgba(30,58,90,0.75) 60%, rgba(26,35,50,0.70) 100%);
   border-radius: inherit;
+  z-index: 1;
 }
 
 .greeting-banner > * {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .greeting-banner h2 {
@@ -436,6 +434,38 @@ body {
   gap: 16px;
   margin-bottom: 24px;
 }
+
+/* ===== MOBILE RESPONSIVE QUERIES ===== */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    width: 0;
+    overflow: hidden;
+  }
+  .main-layout {
+    margin-left: 0;
+    padding-bottom: 65px; /* Space for bottom nav */
+  }
+  .content-area {
+    padding: 16px;
+  }
+  .top-bar {
+    padding: 0 16px;
+  }
+  .top-bar-search {
+    width: 180px;
+  }
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .greeting-banner {
+    padding: 24px 20px;
+  }
+  .greeting-banner h2 {
+    font-size: 20px;
+  }
+}
+
 
 .stat-card {
   background: var(--card-bg);

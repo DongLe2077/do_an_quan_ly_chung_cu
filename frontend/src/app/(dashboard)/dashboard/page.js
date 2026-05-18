@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import useAuthStore from '@/store/authStore';
 import buildingService from '@/services/buildingService';
 import apartmentService from '@/services/apartmentService';
@@ -493,12 +494,13 @@ function AdminDashboard() {
     <div className="page-fade-in">
       {/* GREETING BANNER */}
       <div className="greeting-banner">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+        <Image src="/dashboard-banner.png" alt="Dashboard Banner" fill priority style={{ objectFit: 'cover', zIndex: 0 }} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, position: 'relative', zIndex: 2 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#34c759', boxShadow: '0 0 8px #34c759' }}></div>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' }}>Hệ thống hoạt động bình thường</span>
         </div>
-        <h2>{getGreeting()}, Admin! 👋</h2>
-        <p>Hệ thống ghi nhận <strong style={{ color: '#ffd60a' }}>{stats.suCoPending}</strong> sự cố cần xử lý trong ngày hôm nay.</p>
+        <h2 style={{ position: 'relative', zIndex: 2 }}>{getGreeting()}, Admin! 👋</h2>
+        <p style={{ position: 'relative', zIndex: 2 }}>Hệ thống ghi nhận <strong style={{ color: '#ffd60a' }}>{stats.suCoPending}</strong> sự cố cần xử lý trong ngày hôm nay.</p>
       </div>
 
       {/* STATS ROW */}
