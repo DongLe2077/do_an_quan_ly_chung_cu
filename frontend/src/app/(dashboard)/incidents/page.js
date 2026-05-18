@@ -183,10 +183,12 @@ export default function SuCoPage() {
         <Space size="small">
           {isAdmin ? (
             <>
-              <Button type="link" size="small" icon={<CheckOutlined />} style={{ color: '#52c41a' }}
-                onClick={() => { setEditingRecord(record); xuLyForm.setFieldsValue({ status: record.status }); setXuLyModalOpen(true); }}>
-                Xử lý
-              </Button>
+              {record.status !== 'Đã xử lý' && (
+                <Button type="link" size="small" icon={<CheckOutlined />} style={{ color: '#52c41a' }}
+                  onClick={() => { setEditingRecord(record); xuLyForm.setFieldsValue({ status: record.status }); setXuLyModalOpen(true); }}>
+                  Xử lý
+                </Button>
+              )}
               <Button type="link" size="small" icon={<EditOutlined />} onClick={() => {
                 setEditingRecord(record); 
                 const imageUrls = record.images ? record.images.split(',') : [];

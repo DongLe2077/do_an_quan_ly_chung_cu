@@ -92,13 +92,9 @@ export default function ToaNhaPage() {
 
   const getOccupancy = (building) => {
     const total = getRoomCount(building);
-    if (total === 0) return 0;
-    if (building?.occupied_count !== undefined && building?.occupied_count !== null) {
-      return Math.round((Number(building.occupied_count) / total) * 100);
-    }
-    const rooms = phongList.filter(p => p.building_id === building.building_id);
-    const occupied = rooms.filter(p => p.status === 'Đang sử dụng').length;
-    return Math.round((occupied / total) * 100);
+    const maxApartments = Number(building?.max_apartments) || 0;
+    if (maxApartments <= 0) return 0;
+    return Math.min(100, Math.round((total / maxApartments) * 100));
   };
 
   const filteredData = data.filter(item =>
