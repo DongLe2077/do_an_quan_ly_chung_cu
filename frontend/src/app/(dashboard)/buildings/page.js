@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Modal, Form, Input, InputNumber, message } from 'antd';
 import buildingService from '@/services/buildingService';
 import apartmentService from '@/services/apartmentService';
 
-export default function ToaNhaPage() {
+function ToaNhaContent() {
   const [data, setData] = useState([]);
   const [phongList, setPhongList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -264,5 +264,13 @@ export default function ToaNhaPage() {
         </Form>
       </Modal>
     </div>
+  );
+}
+
+export default function ToaNhaPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Đang tải dữ liệu...</div>}>
+      <ToaNhaContent />
+    </Suspense>
   );
 }

@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Modal, Form, Input, InputNumber, Select, message } from 'antd';
 import apartmentService from '@/services/apartmentService';
 import buildingService from '@/services/buildingService';
 import residentService from '@/services/residentService';
 
-export default function PhongPage() {
+function PhongContent() {
   const [data, setData] = useState([]);
   const [toaNhaList, setToaNhaList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -369,5 +369,13 @@ export default function PhongPage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+export default function PhongPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Đang tải dữ liệu...</div>}>
+      <PhongContent />
+    </Suspense>
   );
 }

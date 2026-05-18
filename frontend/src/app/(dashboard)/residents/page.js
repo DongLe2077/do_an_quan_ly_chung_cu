@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Modal, Form, Input, Select, message } from 'antd';
 import residentService from '@/services/residentService';
@@ -9,7 +9,7 @@ import userService from '@/services/userService';
 
 const avatarColors = ['avatar-blue', 'avatar-green', 'avatar-purple', 'avatar-orange', 'avatar-teal', 'avatar-red', 'avatar-navy'];
 
-export default function CuDanPage() {
+function CuDanContent() {
   const [data, setData] = useState([]);
   const [phongList, setPhongList] = useState([]);
   const [nguoiDungList, setNguoiDungList] = useState([]);
@@ -309,5 +309,13 @@ export default function CuDanPage() {
         </Form>
       </Modal>
     </div>
+  );
+}
+
+export default function CuDanPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Đang tải dữ liệu...</div>}>
+      <CuDanContent />
+    </Suspense>
   );
 }
