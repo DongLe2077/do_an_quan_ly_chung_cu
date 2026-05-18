@@ -256,6 +256,23 @@ const HoaDonController = {
         }
     },
 
+    inspectKeys: (req, res) => {
+        const mask = (key) => {
+            if (!key) return 'MISSING';
+            if (key.length <= 8) return 'SHORT_KEY';
+            return `${key.slice(0, 4)}...${key.slice(-4)}`;
+        };
+
+        return res.json({
+            PAYOS_CLIENT_ID: mask(process.env.PAYOS_CLIENT_ID),
+            PAYOS_API_KEY: mask(process.env.PAYOS_API_KEY),
+            PAYOS_CHECKSUM_KEY: mask(process.env.PAYOS_CHECKSUM_KEY),
+            PAYOS_CLIENT_ID_FALLBACK: mask('f9787f9a-e5d7-4042-9632-20e454fe38c5'),
+            PAYOS_API_KEY_FALLBACK: mask('0a596df3-4f9c-471f-b1a6-5be1a898c940'),
+            PAYOS_CHECKSUM_KEY_FALLBACK: mask('55d5baf838f2182827f5e6e5eec6acb7371f7d9751fc7516125bdfa0f81a5b96')
+        });
+    },
+
     // Admin xác nhận thanh toán
     xacNhanThanhToan: async (req, res) => {
         try {
