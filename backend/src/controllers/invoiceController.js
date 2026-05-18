@@ -121,16 +121,8 @@ const HoaDonController = {
                 return response.error(res, 'Chỉ cư dân được phép thanh toán', 403);
             }
 
-            const resident = await ResidentModel.getByUser(user.user_id);
-            if (!resident || !resident.apartment_id) {
-                return response.error(res, 'Tài khoản cư dân chưa liên kết căn hộ', 403);
-            }
-
             const existing = await HoaDonModel.getById(id);
             if (!existing) return response.error(res, 'Không tìm thấy hóa đơn', 404);
-            if (existing.apartment_id !== resident.apartment_id) {
-                return response.error(res, 'Bạn không có quyền thanh toán hóa đơn này', 403);
-            }
             if (existing.status !== 'Chưa thanh toán') {
                 return response.error(res, 'Hóa đơn không ở trạng thái chờ thanh toán', 400);
             }
@@ -156,16 +148,8 @@ const HoaDonController = {
                 return response.error(res, 'Chỉ cư dân được phép thanh toán', 403);
             }
 
-            const resident = await ResidentModel.getByUser(user.user_id);
-            if (!resident || !resident.apartment_id) {
-                return response.error(res, 'Tài khoản cư dân chưa liên kết căn hộ', 403);
-            }
-
             const existing = await HoaDonModel.getById(id);
             if (!existing) return response.error(res, 'Không tìm thấy hóa đơn', 404);
-            if (existing.apartment_id !== resident.apartment_id) {
-                return response.error(res, 'Bạn không có quyền thanh toán hóa đơn này', 403);
-            }
             if (existing.status === 'Đã thanh toán') {
                 return response.error(res, 'Hóa đơn đã được thanh toán', 400);
             }

@@ -62,7 +62,13 @@ const ResidentModel = {
 
     // Lấy cư dân theo người dùng
     getByUser: async (userId) => {
-        const [rows] = await db.query('SELECT * FROM residents WHERE user_id = ?', [userId]);
+        const [rows] = await db.query(`
+            SELECT cd.*, p.apartment_number, nd.username
+            FROM residents cd 
+            LEFT JOIN apartments p ON cd.apartment_id = p.apartment_id
+            LEFT JOIN users nd ON cd.user_id = nd.user_id
+            WHERE cd.user_id = ?
+        `, [userId]);
         return rows[0];
     },
 
